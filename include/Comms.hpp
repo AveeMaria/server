@@ -1,23 +1,19 @@
 #pragma once 
 
 #include "Utils.hpp"
-#include <SDL_net.h>
-#include <iostream>
-#include <thread>
-#include <chrono>
-#include <memory>
-#include <bitset>
-#include <type_traits>
-#include <variant>
-#include <string>
 
 class Comms {
 private:
+    IPaddress ip;
+    UDPsocket sock;
+
 	const char* host;
 	Uint16 port;
+/*
+    std::vector<UDPpacket*> recvPackets;//TODO FIX
+    std::vector<UDPpacket*> sendPackets;
+    */
 
-	IPaddress ip;
-	UDPsocket sock;
 public:
 	Comms();
 	Comms(const char* h, Uint16 p);
@@ -82,10 +78,6 @@ Uint8 checkType(const T& data) {
     else if (std::is_same<T, std::string>::value) {
         std::cout << "The type is std::string.\n";
         return static_cast<Uint8>(PacketType::STRING);
-    }
-    else if (std::is_same<T, entity>::value) {
-        std::cout << "The type is entity pos.\n";
-        return static_cast<Uint8>(PacketType::ENTITYPOS);
     }
     else {
         std::cout << "The type is undefined.\n";
@@ -159,15 +151,5 @@ ReturnType myFunction(Uint32 option);
 ///////////////////////
 // recieve del kode? //
 ///////////////////////
-
-
-
-
-
-
-
-
-
-
 
 
