@@ -12,8 +12,9 @@ int main() {
 	Comms comms("", (Uint16)12345);
 
 	while (true) {
-		if (comms.recieve()) {
-
+		UDPpacket* recvPacket;
+		if (comms.recieve(&recvPacket)) {
+			std::cout << recvPacket->data << "\n";
 		}
 		
 	}

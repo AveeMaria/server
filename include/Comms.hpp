@@ -9,11 +9,6 @@ private:
 
 	const char* host;
 	Uint16 port;
-/*
-    std::vector<UDPpacket*> recvPackets;//TODO FIX
-    std::vector<UDPpacket*> sendPackets;
-    */
-
 public:
 	Comms();
 	Comms(const char* h, Uint16 p);
@@ -25,8 +20,8 @@ public:
 
     //part za sendat
     template <typename T>
-    
     bool send(T);
+
     template<typename T>
     bool stack_send(T data);
     
@@ -38,51 +33,19 @@ public:
     //part za recivevat
     bool allocEmptyPacket(UDPpacket** packet, int size) const;
     bool recieve();
+    bool recieve(UDPpacket** recvPacket);
 };
 
 //////////////////////////
 // POMEBNE STVARI KLELE //
 //////////////////////////
 
-//pazi kako to sranje includas!!!!! ful sketchy error je ce narobe
-enum class PacketType : Uint8 {
-    INT,
-    FLOAT,
-    COORDS,
-    STRING,
-    ENTITYPOS,//int ID, Coords c
-    UNDEFINED = 255//smeti?
-};
 
 static void printBytes(char data[], size_t size) {
     for (size_t i = 0; i < size; ++i) {
         std::cout << std::bitset<8>(data[i]) << " ";
     }
     std::cout << "\n";
-}
-
-template<typename T>
-Uint8 checkType(const T& data) {
-    if (std::is_same<T, int>::value) {
-        std::cout << "The type is int.\n";
-        return static_cast<Uint8>(PacketType::INT);
-    }
-    else if (std::is_same<T, float>::value) {
-        std::cout << "The type is float.\n";
-        return static_cast<Uint8>(PacketType::FLOAT);
-    }
-    else if (std::is_same<T, Coords>::value) {
-        std::cout << "The type is Coords.\n";
-        return static_cast<Uint8>(PacketType::COORDS);
-    }
-    else if (std::is_same<T, std::string>::value) {
-        std::cout << "The type is std::string.\n";
-        return static_cast<Uint8>(PacketType::STRING);
-    }
-    else {
-        std::cout << "The type is undefined.\n";
-        return static_cast<Uint8>(PacketType::UNDEFINED);
-    }
 }
 
 template<typename T>
@@ -110,13 +73,14 @@ std::unique_ptr<Uint8[]> prepareData(T data) {
 template<typename T>
 bool Comms::send(T data) {
     std::unique_ptr<Uint8[]> packet = prepareData(data);
+
     if (!packet) {
         return false;
     }
+    
     stupidSend(packet.get(), sizeof(data) + 1);
     return true;
 }
-
 
 // STACK ALLOCATION VERZIJA? A JE TO SPLOH KEJ HITREJ?
 template<typename T>
@@ -145,8 +109,11 @@ bool Comms::stack_send(T data) {
 }
 
 //to je sexy af
+/*
 using ReturnType = std::variant<int, float, std::string, Coords>;
 ReturnType myFunction(Uint32 option);
+*/
+
 
 ///////////////////////
 // recieve del kode? //

@@ -117,6 +117,7 @@ bool Comms::allocEmptyPacket(UDPpacket** packet, int size) const {
     return true;
 }
 
+/*
 using ReturnType = std::variant<int, float, std::string, Coords>;
 ReturnType myFunction(Uint32 option) {
     if (option == 1) {
@@ -131,7 +132,7 @@ ReturnType myFunction(Uint32 option) {
     else {
         return Coords{ 1, 2 };
     }
-}
+}*/
 
 /////////////////
 //  recive del //
@@ -191,6 +192,33 @@ bool Comms::recieve()
     std::cout << reinterpret_cast<char*>(recvPacket->data) << "\n";
 
     SDLNet_FreePacket(recvPacket);
+
+    return true;
+}
+
+
+
+bool Comms::recieve(UDPpacket** recvPacket)
+{
+    if (!allocEmptyPacket(&(*recvPacket), 256)) {
+        std::cerr << "ERROR: Failed to allocate memory for the packet." << std::endl;
+        return false;
+    }
+
+    if (SDLNet_UDP_Recv(sock, *recvPacket) <= 0) {
+        SDLNet_FreePacket(*recvPacket);
+        return false;
+    }
+
+//    size_t size = recvPacket->len;
+    size_t size = (*recvPacket)->len;
+    printBytes(reinterpret_cast<char*>((*recvPacket)->data), size);
+
+    std::cout << "Received packet from: " << SDLNet_ResolveIP(&(*recvPacket)->address) << "\n";
+
+    std::cout << reinterpret_cast<char*>((*recvPacket)->data) << "\n";
+
+    SDLNet_FreePacket((*recvPacket));
 
     return true;
 }
