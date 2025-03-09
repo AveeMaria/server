@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "Utils.hpp"
+#include "PacketType.hpp"
 
 class Comms {
 private:
@@ -24,6 +25,9 @@ public:
 
     template<typename T>
     bool stack_send(T data);
+
+    template<typename T>
+    bool stack_send(T data, IPaddress _ip);
     
     bool stupidestSend(const char* data) const;
 	bool stupidSend(Uint8* data, size_t size) const;
@@ -47,6 +51,21 @@ static void printBytes(char data[], size_t size) {
     }
     std::cout << "\n";
 }
+//smeti????
+//template<typename T>
+//Uint8 checkType(T data) {
+//    // Implement type checking logic here
+//    // Return a unique Uint8 value for each type
+//    if (std::is_same<T, int>::value) {
+//        return 1;
+//    } else if (std::is_same<T, float>::value) {
+//        return 2;
+//    } else if (std::is_same<T, std::string>::value) {
+//        return 3;
+//    } else {
+//        return 255; // Unknown type
+//    }
+//}
 
 template<typename T>
 std::unique_ptr<Uint8[]> prepareData(T data) {
@@ -108,6 +127,41 @@ bool Comms::stack_send(T data) {
     return true;
 }
 
+
+// STACK ALLOCATION VERZIJA? A JE TO SPLOH KEJ HITREJ?
+template<typename T>
+bool Comms::stack_send(T data, IPaddress _ip) {
+    Uint8 type = checkType(data);
+    if (type == 255) return false;
+
+    UDPpacket* sendPacket = SDLNet_AllocPacket(static_cast<int>(sizeof(T) + 1));
+
+    if (sendPacket->len == 0) {
+        sendPacket->len = sizeof(T) + 1;
+        //std::cout << "ERROR: prazen paketek\n";
+    }
+    sendPacket->address.host = _ip.host;
+    sendPacket->address.port = _ip.port;
+
+    sendPacket->data[0] = type;
+    std::memcpy(&sendPacket->data[1], &data, sizeof(T));
+    printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 1);
+
+    if (SDLNet_UDP_Send(sock, -1, sendPacket) < 1) {
+        std::cerr << "ERROR: SDLNet_UDP_Send error: " << SDLNet_GetError() << "\n";
+        SDLNet_FreePacket(sendPacket);
+        return false;
+    }
+    //std::cout << "OK: poslan paket.\n";
+
+	//std::cout << "TIP PAKETKA: " << (int)sendPacket->data[0] << "\n";
+
+    SDLNet_FreePacket(sendPacket);
+    return true;
+}
+
+
+
 //to je sexy af
 /*
 using ReturnType = std::variant<int, float, std::string, Coords>;
@@ -118,5 +172,3 @@ ReturnType myFunction(Uint32 option);
 ///////////////////////
 // recieve del kode? //
 ///////////////////////
-
-

@@ -7,6 +7,7 @@ Comms::Comms()
     resolveHost();
     openSocket();
 	//allocPacket(&recvPacket, nullptr, 512);
+	std::cout << "----------------\n";
 }
 
 Comms::Comms(const char* h, Uint16 p)
@@ -16,6 +17,7 @@ Comms::Comms(const char* h, Uint16 p)
     resolveHost();
     openSocket();
     //allocEmptyPacket(&recvPacket, 256);
+    std::cout << "----------------\n";
 }
 
 Comms::~Comms()
@@ -101,7 +103,8 @@ bool Comms::allocPacket(UDPpacket** packet, const Uint8* data, int size) const {
     std::memcpy((*packet)->data, data, size);//nepotrebno?
     (*packet)->len = size;
 
-    std::cout << "OK: Packet allocated.\n";
+    //dont dilet sam debug
+    //std::cout << "OK: Packet allocated.\n";
     return true;
 }
 
@@ -138,39 +141,6 @@ ReturnType myFunction(Uint32 option) {
 //  recive del //
 /////////////////
 
-/*
-bool Comms::recieve()
-{
-    int packetsReceived = 0;
-
-    while (true) {
-        UDPpacket* recvPacket;
-        if (!allocEmptyPacket(&recvPacket, 256)) {
-            std::cerr << "ERROR: Failed to allocate memory for the packet." << std::endl;
-            return false;
-        }
-
-        if (SDLNet_UDP_Recv(sock, recvPacket) <= 0) {
-            SDLNet_FreePacket(recvPacket);
-            break;
-        }
-
-        packetsReceived++;
-
-        printBytes(reinterpret_cast<char*>(recvPacket->data), (size_t) recvPacket->len);
-
-        std::cout << "Received packet from: " << SDLNet_ResolveIP(&recvPacket->address) << "\n";
-
-        std::cout << reinterpret_cast<char*>(recvPacket->data) << "\n";
-
-        SDLNet_FreePacket(recvPacket);
-        break;
-    }
-
-    return packetsReceived > 0;
-}
-*/
-
 bool Comms::recieve()
 {
     UDPpacket* recvPacket;
@@ -185,11 +155,12 @@ bool Comms::recieve()
     }
 
     size_t size = recvPacket->len;
-    printBytes(reinterpret_cast<char*>(recvPacket->data), size);
 
-    std::cout << "Received packet from: " << SDLNet_ResolveIP(&recvPacket->address) << "\n";
 
-    std::cout << reinterpret_cast<char*>(recvPacket->data) << "\n";
+    //dont delete sam za debugat
+//    printBytes(reinterpret_cast<char*>(recvPacket->data), size);
+    //std::cout << "Received packet from: " << SDLNet_ResolveIP(&recvPacket->address) << "\n";
+    //std::cout << reinterpret_cast<char*>(recvPacket->data) << "\n";
 
     SDLNet_FreePacket(recvPacket);
 
@@ -212,12 +183,13 @@ bool Comms::recieve(UDPpacket** recvPacket)
 
 //    size_t size = recvPacket->len;
     size_t size = (*recvPacket)->len;
+
+    //dont delete, samo za debugat
+    /*
     printBytes(reinterpret_cast<char*>((*recvPacket)->data), size);
-
     std::cout << "Received packet from: " << SDLNet_ResolveIP(&(*recvPacket)->address) << "\n";
-
     std::cout << reinterpret_cast<char*>((*recvPacket)->data) << "\n";
-
+    */
     SDLNet_FreePacket((*recvPacket));
 
     return true;
