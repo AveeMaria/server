@@ -8,6 +8,7 @@ std::vector<IPaddress> clients;//connected clients
 
 int main() {
 	std::cout << "SERVERSIDE\n";
+
 	if (SDLNet_Init() < 0) {
 		std::cerr << "ERROR: SDLNet_Init failed: " << SDLNet_GetError() << "\n";
 		SDLNet_Quit();
@@ -17,8 +18,16 @@ int main() {
 
 	Comms comms("", (Uint16)12345);
 
+	UDPpacket* recvPacket;
+
+	recvPacket = SDLNet_AllocPacket(512);
+	/*
+	if (!comms.allocEmptyPacket(&recvPacket, 256)) {
+		std::cerr << "ERROR: Failed to allocate memory for the packet." << std::endl;
+		return false;
+	}*/
+
 	while (true) {
-		UDPpacket* recvPacket;
 		if (comms.recieve(&recvPacket)) {
 			printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
 
@@ -33,14 +42,15 @@ int main() {
 					break;
 				///////
 				case (int)PacketType::SYN:
-					//std::cout << "type: SYN\n";
-
-					std::this_thread::sleep_for(std::chrono::milliseconds(300));
+					std::cout << "type: SYN\n";
 
 					//std::cout << "----------------------------\n";
 
 					if (!comms.stack_send( SYN_ACK{ SDL_GetTicks() }, recvPacket->address)) {
 						std::cerr << "ERROR: SYN_ACK not sent.\n";
+					}
+					else {
+						std::cout << "SYN_ACK sent.\n";
 					}
 					break;
 				
@@ -49,7 +59,7 @@ int main() {
 					break;
 
 				case (int)PacketType::ACK:
-					//std::cout << "type: ACK\n";
+					std::cout << "type: ACK\n";
 
 					//dodamo clienta v seznam clientov
 					clients.emplace_back(recvPacket->address);
@@ -66,14 +76,12 @@ int main() {
 					break;
 			}
 		}
-		
-
 	}
 
 	std::cout << "Sleeping for 25 seconds...\n";
 	std::this_thread::sleep_for(std::chrono::milliseconds(25000));
 
-
+	SDLNet_FreePacket(recvPacket);
 	SDLNet_Quit();
 	return 0;
 }
