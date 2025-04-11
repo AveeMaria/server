@@ -4,6 +4,7 @@
 #include "PacketType.hpp"
 
 #include <sstream>
+#include <bitset>
 
 class Comms {
 private:
@@ -21,20 +22,15 @@ public:
 	bool resolveHost();
 	bool openSocket();
 
-    //part za sendat
-    template <typename T>
-    bool send(T);
-
     template<typename T>
     bool stack_send(T data);
 
     template<typename T>
     bool stack_send(T data, IPaddress _ip);
     
-    bool stupidestSend(const char* data) const;
-	bool stupidSend(Uint8* data, size_t size) const;
+	//bool stupidSend(Uint8* data, size_t size) const;
 	
-    bool allocPacket(UDPpacket** packet, const Uint8* data, int size) const;
+    //bool allocPacket(UDPpacket** packet, const Uint8* data, int size) const;
 
     //part za recivevat
     bool allocEmptyPacket(UDPpacket** packet, int size) const;
@@ -60,43 +56,6 @@ static std::stringstream byteToString(char data[], size_t size) {
 	return ss;
 }
 
-//smeti????
-//template<typename T>
-//Uint8 checkType(T data) {
-//    // Implement type checking logic here
-//    // Return a unique Uint8 value for each type
-//    if (std::is_same<T, int>::value) {
-//        return 1;
-//    } else if (std::is_same<T, float>::value) {
-//        return 2;
-//    } else if (std::is_same<T, std::string>::value) {
-//        return 3;
-//    } else {
-//        return 255; // Unknown type
-//    }
-//}
-
-template<typename T>
-std::unique_ptr<Uint8[]> prepareData(T data) {
-    size_t packetSize = 1 + sizeof(data);
-    std::cout << "data size: " << packetSize << "\n";
-
-    std::unique_ptr<Uint8[]> buffer(new Uint8[packetSize]);
-    Uint8 type = checkType(data);
-
-    if (type == 255) {
-        return nullptr;
-    }
-    else {
-        buffer[0] = type;
-    }
-
-    std::memcpy(&buffer[1], &data, sizeof(data));
-
-    printBytes(reinterpret_cast<char*>(buffer.get()), packetSize);
-
-    return buffer;
-}
 
 template<typename T>
 bool Comms::stack_send(T data) {
@@ -146,7 +105,6 @@ bool Comms::stack_send(T data) {
     return true;
 }
 
-
 template<typename T>
 bool Comms::stack_send(T data, IPaddress _ip) {
     Uint8 type = checkType(data);
@@ -186,7 +144,25 @@ using ReturnType = std::variant<int, float, std::string, Coords>;
 ReturnType myFunction(Uint32 option);
 */
 
+/*
+template<typename T>
+std::unique_ptr<Uint8[]> prepareData(T data) {
+    size_t packetSize = 1 + sizeof(data);
+    std::cout << "data size: " << packetSize << "\n";
 
-///////////////////////
-// recieve del kode? //
-///////////////////////
+    std::unique_ptr<Uint8[]> buffer(new Uint8[packetSize]);
+    Uint8 type = checkType(data);
+
+    if (type == 255) {
+        return nullptr;
+    }
+    else {
+        buffer[0] = type;
+    }
+
+    std::memcpy(&buffer[1], &data, sizeof(data));
+
+    printBytes(reinterpret_cast<char*>(buffer.get()), packetSize);
+
+    return buffer;
+}*/

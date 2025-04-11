@@ -1,4 +1,4 @@
-project("game")
+project("Server")
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,13 +20,13 @@ include_directories(
 file(GLOB_RECURSE SRC_FILES src/*.cpp include/*.hpp)
 
 #create executable
-add_executable(Game main.cpp ${SRC_FILES})
+add_executable(Server main.cpp ${SRC_FILES})
 
 #define SDL_MAIN_HANDLED globally before including SDL headers
-target_compile_definitions(Game PRIVATE SDL_MAIN_HANDLED)
+target_compile_definitions(Server PRIVATE SDL_MAIN_HANDLED)
 
 #link SDL2, SDL2_image, SDL2_net, SDL2_ttf, and SDL2_mixer libraries
-target_link_libraries(Game 
+target_link_libraries(Server 
     "${SDL2_DIR}/lib/x64/SDL2.lib" 
     "${SDL2_IMAGE_DIR}/lib/x64/SDL2_image.lib"
     "${SDL2_NET_DIR}/lib/x64/SDL2_net.lib"
@@ -34,7 +34,7 @@ target_link_libraries(Game
     "${SDL2_MIXER_DIR}/lib/x64/SDL2_mixer.lib"
 )
 
-add_custom_command(TARGET Game POST_BUILD
+add_custom_command(TARGET Server POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${SDL2_DIR}/lib/x64/SDL2.dll"
     "${SDL2_IMAGE_DIR}/lib/x64/SDL2_image.dll"
@@ -46,7 +46,7 @@ add_custom_command(TARGET Game POST_BUILD
     "${SDL2_IMAGE_DIR}/lib/x64/libtiff-5.dll"
     "${SDL2_IMAGE_DIR}/lib/x64/libwebp-4.dll"
     "${SDL2_IMAGE_DIR}/lib/x64/zlib1.dll"
-    $<TARGET_FILE_DIR:Game>
+    $<TARGET_FILE_DIR:Server>
 )
 
 message(STATUS "presnet cmake DIR: ${CMAKE_SOURCE_DIR}")
