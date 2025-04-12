@@ -16,6 +16,7 @@ private:
 public:
 	Comms();
 	Comms(const char* h, Uint16 p);
+    Comms(Uint16 p);
 	~Comms();
 
     //to se klice v konstruktorjih
@@ -37,6 +38,16 @@ public:
     bool recieve();
 
     bool recieve(UDPpacket** recvPacket);
+
+    static bool ipEquals(const IPaddress& a, const IPaddress& b) {
+        Uint32 hostA = SDLNet_Read32(&a.host);
+        Uint32 hostB = SDLNet_Read32(&b.host);
+        return (hostA == hostB) && (a.port == b.port);
+    }
+
+    IPaddress Comms::getRemoteIP() const {
+        return ip;
+    }
 };
 
 //////////////////////////
@@ -84,7 +95,7 @@ bool Comms::stack_send(T data) {
 
     sendPacket->data[0] = type;
     std::memcpy(&sendPacket->data[1], &data, sizeof(T));
-    //    printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 1);
+    //printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 1);
 
     if (sock == nullptr) {
         std::cout << "ERROR: null socket\n";
@@ -112,20 +123,25 @@ bool Comms::stack_send(T data, IPaddress _ip) {
 
     UDPpacket* sendPacket = SDLNet_AllocPacket(sizeof(T) + 1);
 
+    if (sendPacket == nullptr) {
+        std::cout << "ERROR: No packet\n";
+        return false;
+    }
+    if (!sendPacket) {
+        std::cout << "ERROR: No packet\n";
+        return false;
+    }
+
     sendPacket->address.host = _ip.host;
     sendPacket->address.port = _ip.port;
 
-    std::cout << "Packet size: " << sizeof(sendPacket) << "\n";
-
-    if (sendPacket == nullptr) {
-        std::cout << "ERROR: No packet\n";
-    }
-
+    std::cout << "Send packet size: " << sizeof(T) + 1 << "\n";
     sendPacket->len = (sizeof(T) + 1);
+
+    printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 1);
 
     sendPacket->data[0] = type;
     std::memcpy(&sendPacket->data[1], &data, sizeof(T));
-    printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 1);
 
     if (SDLNet_UDP_Send(sock, -1, sendPacket) < 1) {
         std::cerr << "ERROR: SDLNet_UDP_Send error: " << SDLNet_GetError() << "\n";

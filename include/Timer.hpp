@@ -21,5 +21,7 @@ public:
 
 	bool done() const { return finished; }
 
+	Uint32 getSeconds() const { return seconds; }
+
 	void restart();
 };

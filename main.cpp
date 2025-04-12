@@ -13,6 +13,9 @@ std::vector<Game> games;//matches that happen now
 
 int Entity::ent_cnt = 100;
 
+const int frameDelay = 1000 / FPS;
+
+
 int main() {
 	//std::cout << "Entity count initalized: " << Entity::ent_cnt << "\n";
 
@@ -28,7 +31,7 @@ int main() {
 	
 	//std::unique_ptr<Match> match(std::make_unique<Match>());
 
-	Comms comms("", (Uint16)12345);
+	Comms comms(12345);
 
 	UDPpacket* recvPacket;
 	recvPacket = SDLNet_AllocPacket(512);
@@ -36,7 +39,7 @@ int main() {
 	//games.push_back(Game());
 
 	while (true) {
-		if (comms.recieve(&recvPacket)) {
+		while (comms.recieve(&recvPacket)) {
 			//printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
 
 			///PREVER KER PACKET JE PO PRVEM BYTU
@@ -49,8 +52,6 @@ int main() {
 				break;
 			case (int)PacketType::SYN:
 				//std::cout << "type: SYN\n";
-
-				//std::cout << "----------------------------\n";
 
 				if (!comms.stack_send(SYN_ACK{ SDL_GetTicks() }, recvPacket->address)) {
 					std::cerr << "ERROR: SYN_ACK not sent.\n";
@@ -71,7 +72,7 @@ int main() {
 				{
 					auto it = std::find_if(clients.begin(), clients.end(), [&](const IPaddress& addr) {
 						return addr.host == recvPacket->address.host && addr.port == recvPacket->address.port;
-					});
+						});
 					if (it == clients.end()) {
 						clients.emplace_back(recvPacket->address);
 					}
@@ -80,14 +81,41 @@ int main() {
 					}
 				}
 
-				std::cout << "client " << recvPacket->address.host << " connected\n";
+			std::cout << "client " << recvPacket->address.host << " on port: " << recvPacket->address.port << " connected\n";
 
-				if (clients.size() == 2) {
-					games.emplace_back(Game(clients[0], clients[1], comms));
-					std::cout << "Game Started\n";
-					clients.clear();
-					//clients.pop_back();clients.pop_back();
+			if (clients.size() == 2) {
+				games.emplace_back(Game(clients[0], clients[1], comms));
+				std::cout << "Game Started\n";
+			}
+
+			break;
+
+			case (int)PacketType::TOWER_REQUEST:
+				std::cout << "main: TOWER_REQUEST\n";
+				for (auto& g : games) {
+					std::cout << "game checked\n";
+					if (Comms::ipEquals(g.getAttacker(), recvPacket->address)) {
+						g.networking(comms, recvPacket);
+						std::cout << "game FOUND";
+					}
 				}
+
+				break;
+			case (int)PacketType::ENEMY_REQUEST:
+				/*
+				for (auto it = games.begin(); it != games.end();) {
+					if (it->getAttacker().host == recvPacket->address.host && it->getAttacker().port == recvPacket->address.port) {
+						it->networking(comms, recvPacket);
+						break;
+					}
+					else if (it->getDefender().host == recvPacket->address.host && it->getDefender().port == recvPacket->address.port) {
+
+						break;
+					}
+					else {
+						++it;
+					}
+				}*/
 
 				break;
 			default:
@@ -95,8 +123,16 @@ int main() {
 				break;
 			}
 		}
+		if (clients.size() == 2) {
+			games.emplace_back(Game(clients[0], clients[1], comms));
+			std::cout << "Game Started\n";
+			clients.clear();
+			//break;//koncej loop
+		}
 
-		for (auto it = games.begin(); it != games.end(); ) {
+		auto frameStart = std::chrono::high_resolution_clock::now();
+
+		for (auto it = games.begin(); it != games.end();) {
 			if (!it->running()) {
 				it = games.erase(it);
 				std::cout << "Game ended.\n";
@@ -104,9 +140,14 @@ int main() {
 			else {
 				it->update();
 				it->networking(&comms);
-
 				++it;
 			}
+		}
+
+		auto frameDuration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - frameStart).count();
+
+		if (frameDuration < frameDelay) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(frameDelay - frameDuration));
 		}
 	}
 

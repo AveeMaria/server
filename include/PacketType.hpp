@@ -2,8 +2,6 @@
 
 #include "Utils.hpp"
 
-//struct GenericPacket
-
 //pazi kako to sranje includas!!!!! ful sketchy error je ce narobe
 enum class PacketType : Uint8 {
     //networking
@@ -18,95 +16,83 @@ enum class PacketType : Uint8 {
     GAME_DATA_START = 25,
     GAME_DATA_END = 30,
 
-    //gamedata
+    //game data
 
-    CREATE_TOWER = 35,//id?, destrect, type
-    CREATE_ENEMY = 40,//id, destrect, type
-    
-    
+    CREATE_TOWER = 35,//id, destrect, type
+    CREATE_ENEMY = 40,// id, destrect, type 
+
+    DELETE_ENTITY = 45,//id
+
+    ENEMY_REQUEST = 50,//id, coords
+    TOWER_REQUEST = 55,//id, coords
+
     PLAYER_NAME = 100,//string
+    ROLE = 105,//bool false = attacker, true = defender
+
     ENTITY_POS = 140,
     //input data
-    
+
+    INIT_TIMER = 200,//uni32t time
+
     UNDEFINED = 255//smeti?
 };
 
 template<typename T>
 Uint8 checkType(const T& data)
 {
-    if (true) {
-        if (std::is_same<T, PING>::value) {
-            return static_cast<Uint8>(PacketType::PING);
-        }
+    //vecji typname safety
+    using U = typename std::decay<T>::type;
 
-        else if (std::is_same<T, PONG>::value) {
-            return static_cast<Uint8>(PacketType::PONG);
-        }
+    if (std::is_same<U, PING>::value) {
+        return static_cast<Uint8>(PacketType::PING);
+    }
 
-        else if (std::is_same<T, SYN>::value) {
-            return static_cast<Uint8>(PacketType::SYN);
-        }
-        else if (std::is_same<T, SYN_ACK>::value) {
-            return static_cast<Uint8>(PacketType::SYN_ACK);
-        }
-        else if (std::is_same<T, ACK>::value) {
-            return static_cast<Uint8>(PacketType::ACK);
-        }
-        ////////
-		else if (std::is_same<T, CreateTower>::value) {
-			return static_cast<Uint8>(PacketType::CREATE_TOWER);
-		}
-        else if (std::is_same<T, CreateEnemy>::value) {
-            return static_cast<Uint8>(PacketType::CREATE_ENEMY);
-        }
+    else if (std::is_same<U, PONG>::value) {
+        return static_cast<Uint8>(PacketType::PONG);
+    }
+
+    else if (std::is_same<U, SYN>::value) {
+        return static_cast<Uint8>(PacketType::SYN);
+    }
+    else if (std::is_same<U, SYN_ACK>::value) {
+        return static_cast<Uint8>(PacketType::SYN_ACK);
+    }
+    else if (std::is_same<U, ACK>::value) {
+        return static_cast<Uint8>(PacketType::ACK);
+    }
+    ////////
+	else if (std::is_same<U, CreateTower>::value) {
+		return static_cast<Uint8>(PacketType::CREATE_TOWER);
+	}
+    else if (std::is_same<U, CreateEnemy>::value) {
+        return static_cast<Uint8>(PacketType::CREATE_ENEMY);
+    }
+    else if (std::is_same<U, DeleteEntity>::value) {
+        return static_cast<Uint8>(PacketType::DELETE_ENTITY);
+    }
+    ////
+    else if (std::is_same<U, Role>::value) {
+        return static_cast<Uint8>(PacketType::ROLE);
+    }
+    else if (std::is_same<U, InitTimer>::value) {
+        return static_cast<Uint8>(PacketType::INIT_TIMER);
+    }
+    ////
+    else if (std::is_same<U, EnemyRequest>::value) {
+        return static_cast<Uint8>(PacketType::ENEMY_REQUEST);
+    }
+    else if (std::is_same<U, TowerRequest>::value) {
+        return static_cast<Uint8>(PacketType::TOWER_REQUEST);
+    }
+    /////
         
-
-        else if (std::is_same<T, std::string>::value) {
-            return static_cast<Uint8>(PacketType::PLAYER_NAME);
-        }
-        else if (std::is_same<T, EntityPos>::value) {
-            return static_cast<Uint8>(PacketType::ENTITY_POS);
-        }
-        else {
-            return static_cast<Uint8>(PacketType::UNDEFINED);
-        }
+    else if (std::is_same<U, std::string>::value) {
+        return static_cast<Uint8>(PacketType::PLAYER_NAME);
+    }
+    else if (std::is_same<U, EntityPos>::value) {
+        return static_cast<Uint8>(PacketType::ENTITY_POS);
     }
     else {
-        ////////////SAM ZA DEBUG K MA SE SPOROCILA!
-        if (std::is_same<T, PING>::value) {
-            std::cout << "The type is PING.\n";
-            return static_cast<Uint8>(PacketType::PING);
-        }
-
-        else if (std::is_same<T, PONG>::value) {
-            std::cout << "The type is PONG.\n";
-            return static_cast<Uint8>(PacketType::PONG);
-        }
-
-        else if (std::is_same<T, SYN>::value) {
-            std::cout << "The type is syn.\n";
-            return static_cast<Uint8>(PacketType::SYN);
-        }
-        else if (std::is_same<T, SYN_ACK>::value) {
-            std::cout << "The type is syn_ack.\n";
-            return static_cast<Uint8>(PacketType::SYN_ACK);
-        }
-        else if (std::is_same<T, ACK>::value) {
-            std::cout << "The type is ack.\n";
-            return static_cast<Uint8>(PacketType::ACK);
-        }
-        ////////
-        else if (std::is_same<T, std::string>::value) {
-            std::cout << "The type is std::string.\n";
-            return static_cast<Uint8>(PacketType::PLAYER_NAME);
-        }
-        else if (std::is_same<T, EntityPos>::value) {
-            std::cout << "The type is std::string.\n";
-            return static_cast<Uint8>(PacketType::ENTITY_POS);
-        }
-        else {
-            std::cout << "The type is undefined.\n";
-            return static_cast<Uint8>(PacketType::UNDEFINED);
-        }
+        return static_cast<Uint8>(PacketType::UNDEFINED);
     }
 }

@@ -30,6 +30,8 @@ public:
 	Game();
 	Game(IPaddress attacker, IPaddress defender, Comms &comms);
 
+	void networking(Comms& comms, UDPpacket* recvPacket);
+
 	~Game();
 
 	void networking(Comms* comms);
@@ -42,9 +44,14 @@ public:
 
 	void clean();
 	bool running() const { return isRunning; }
+
+	IPaddress getAttacker() const { return attacker; }
+	IPaddress getDefender() const { return defender; }
 private:
 	IPaddress attacker = { 0,0 };
 	IPaddress defender = { 0,0 };
+
+	std::vector<int> deletedEntityIDs;
 
 	bool isRunning = false;
 	bool paused = false;

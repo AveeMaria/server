@@ -89,22 +89,7 @@ void Enemy::Move(std::unique_ptr<Map>& m) {
         currDir = Direction::UNDEFINED;
     }
 }
-/*
-Enemy::Enemy() {
-    xpos = 0;
-    ypos = 0;
-    Update();
-}
 
-Enemy::Enemy(Coords& c)
-{
-    //type = EnemyType::GOBLIN;
-    type = static_cast<EnemyType>(std::rand() % 4);
-
-    xpos = c.x; ypos = c.y;
-    Update();
-}
-*/
 Enemy::Enemy() : Entity(0, 0) {
     type = static_cast<EnemyType>(std::rand() % 4);
     Update();
@@ -112,6 +97,11 @@ Enemy::Enemy() : Entity(0, 0) {
 
 Enemy::Enemy(Coords& c) : Entity(c) {
     type = static_cast<EnemyType>(std::rand() % 4);
+    Update();
+}
+
+Enemy::Enemy(Coords& c, int& _type) : Entity(c) {
+    type = static_cast<EnemyType>(_type);
     Update();
 }
 

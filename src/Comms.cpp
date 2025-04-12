@@ -9,12 +9,23 @@ Comms::Comms()
 	std::cout << "----------------\n";
 }
 
+//KONSTURKTOR SAMO ZA CLIENTSIDE
 Comms::Comms(const char* h, Uint16 p)
 {
     host = h;
     port = p;
     resolveHost();
     openSocket();
+    std::cout << "----------------\n";
+}
+
+//KONSTRUKTOR SAMO ZA SERVERSIDE
+Comms::Comms(Uint16 p) {
+    port = p;
+    if (!openSocket()) { 
+        std::cout << "ERROR CANT OPEN SOCKET\n"; 
+    }
+    std::cout << "Server socket opened on port " << port << "\n";
     std::cout << "----------------\n";
 }
 
@@ -87,6 +98,10 @@ bool Comms::recieve()
 
 bool Comms::recieve(UDPpacket** recvPacket)
 {
+    if (!recvPacket) {
+        std::cout << "WARNING: null recvPacket";
+        return false;
+    }
     if (SDLNet_UDP_Recv(sock, *recvPacket) <= 0) {
         return false;
     }

@@ -12,86 +12,152 @@ std::vector<std::unique_ptr<Enemy>> enemies;
 
 std::vector<std::unique_ptr<Tower>> towers;
 
-Game::Game(IPaddress attacker, IPaddress defender, Comms& comms)
+Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
 {
+    attacker = _attacker;
+    defender = _defender;
+
     isRunning = true;
 
     map = std::make_unique<Map>();
-    timer = std::make_unique<Timer>(90);
 
-    towers.emplace_back(std::make_unique<Tower>(TowerType::ARCHER, Tile{ 3, 1 }));
-    /*
-    towers.emplace_back(std::make_unique<Tower>(TowerType::ARCHER, 1, 2));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::MAGE, 5, 1));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::BARRACKS, 3, 1));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::MORTAR, 3, 3));
-    */
+    towers.emplace_back(std::make_unique<Tower>(TowerType::MAGE, Tile{ 3, 3 }));
+    towers.emplace_back(std::make_unique<Tower>(TowerType::ARCHER, Tile{ 1, 3 }));
+    towers.emplace_back(std::make_unique<Tower>(TowerType::BARRACKS, Tile{ 1, 4 }));
+    towers.emplace_back(std::make_unique<Tower>(TowerType::MORTAR, Tile{ 3, 5 }));
 
     enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 1, 0 })));
-    //enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 4, 2 })));
-    //enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 3, 1 })));
+    enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 2, 2 })));
+    enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 1, 1 })));
 
     //std::cout << "ent_cnt: " << Entity::ent_cnt << "\n";
 
+    comms.stack_send(Role{ false }, attacker);
+    comms.stack_send(Role{ true }, defender);
+    
     for (auto& t : towers) {
         comms.stack_send(CreateTower{ t->getID(), t->getRect(), (int)t->getType() }, attacker);
         comms.stack_send(CreateTower{ t->getID(), t->getRect(), (int)t->getType() }, defender);
     }
 
-    std::cout << "ENBEMY COUNT:T:T: " << enemies.size() << "\n";
-
     for (auto& e : enemies) {
-        std::cout << "ENEMY STUFF: " << e->getID() << " " << e->getRect().x << " " << e->getRect().y << " " << (int)e->getType() << "\n";
         comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, defender);
         comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, attacker);
+    }
+
+    timer = std::make_unique<Timer>(90);
+    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
+    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
+}
+
+
+void Game::networking(Comms& comms, UDPpacket* recvPacket) {
+    //prvo posle da manjsa delay pol brise
+    for (int i : deletedEntityIDs) {
+        //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
+        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, attacker);
+
+        //std::cout << "defender host: " << defender.host << " port: " << defender.port << "\n";
+        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, defender);
+    }
+	deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
+    
+    if (recvPacket) {
+        if (recvPacket->len == 0) {
+            std::cout << "ERROR: EMPTY PACKET";
+            return;
+        }
+        //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
+
+		std::cout << "recvPacket len: " << recvPacket->len << "\n";
+
+        ///PREVER KER PACKET JE PO PRVEM BYTU
+        switch ((Uint8)recvPacket->data[0]) {
+        case (int)PacketType::ENEMY_REQUEST:
+            std::cout << "type: ENEMY_REQUEST\n";
+            
+            EnemyRequest er;
+			memcpy(&er, &recvPacket->data[1], sizeof(EnemyRequest));
+			enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
+            
+            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
+            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, attacker);
+
+            break;
+        case (int)PacketType::TOWER_REQUEST:
+            std::cout << "type: TOWER_REQUEST\n";
+
+            TowerRequest tr;
+            memcpy(&tr, &recvPacket->data[1], sizeof(TowerRequest));
+            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
+
+            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
+
+            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, attacker);
+            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, defender);
+
+            break;
+        default:
+            std::cout << "Unknown packet type.\n";
+            break;
+        }
+    }
+    else {
+		std::cout << "ERROR: recvPacket is null\n";
     }
 }
 
 void Game::networking(Comms* comms) {
-    //comms->stack_send(, attacker);
+    //prvo posle da manjsa delay pol brise
+    for (int i : deletedEntityIDs) {
+        //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
+        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, attacker);
 
-    UDPpacket* recvPacket;
+        //std::cout << "defender host: " << defender.host << " port: " << defender.port << "\n";
+        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, defender);
+    }
+    deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
+
+    UDPpacket* recvPacket = SDLNet_AllocPacket(512);
     if (comms->recieve(&recvPacket)) {
         if (recvPacket->len == 0) {
             std::cout << "ERROR: EMPTY PACKET";
             //continue;
             return;
         }
-        printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
+        //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
 
         ///PREVER KER PACKET JE PO PRVEM BYTU
-
         switch ((Uint8)recvPacket->data[0]) {
-        case (int)PacketType::PING:
-            std::cout << "type: PING\n";
-            break;
-        case (int)PacketType::PONG:
-            std::cout << "type: PONG\n";
-            break;
-            ///////
-        case (int)PacketType::SYN:
-            std::cout << "ERROR: type: SYN\n";//TEGA CLIENT NE SPREJEMA KER POSLJE
-            break;
-        case (int)PacketType::SYN_ACK:
-            std::cout << "type: SYN_ACK\n";
+        case (int)PacketType::ENEMY_REQUEST:
+            std::cout << "type: ENEMY_REQUEST\n";
 
-            if (!comms->stack_send(ACK{ SDL_GetTicks() }, recvPacket->address)) {
-                std::cerr << "ERROR: ACK not sent.\n";
-            }
+            EnemyRequest er;
+            memcpy(&er, &recvPacket->data[1], sizeof(EnemyRequest));
+            enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
+
+            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
+            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, attacker);
+
             break;
-        case (int)PacketType::ACK:
-            std::cout << "ERROR: type: ACK\n";//TEGA CLIENT NE SPREJEMA KER POSLJE
+        case (int)PacketType::TOWER_REQUEST:
+            std::cout << "type: TOWER_REQUEST\n";
+
+            TowerRequest tr;
+            memcpy(&tr, &recvPacket->data[1], sizeof(TowerRequest));
+            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
+
+            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
+
+            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), er.type }, attacker);
+            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), er.type }, defender);
+
             break;
-        
         default:
             std::cout << "Unknown packet type.\n";
             break;
         }
     }
-}
-
-void Game::recive_inputs(Comms* comms)
-{
 }
 
 void Game::update() {
@@ -140,17 +206,25 @@ void Game::update() {
 
     for (auto it = enemies.begin(); it != enemies.end(); ) {
         std::unique_ptr<Enemy>& e = *it;
-        e->Move(map);
-        e->Update();
-
-        if (!e->alive()){
-            it = enemies.erase(it); break;
+        
+        if (!e->alive()) {
+            int id = e->getID();
+            deletedEntityIDs.emplace_back(id);
+            std::cout << "delete enemy id: " << id << " deleteVector size: " << deletedEntityIDs.size() << "\n";
+            it = enemies.erase(it);
         }
         else {
-			++it;
+            e->Move(map);
+            e->Update();
+            ++it;
         }
     }
 }
+
+void Game::recive_inputs(Comms* comms)
+{
+}
+
 
 void Game::send_data(Comms* comms)
 {
