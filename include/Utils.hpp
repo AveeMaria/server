@@ -97,7 +97,6 @@ struct InitGame {
 
 struct EnemyRequest {
 	int type;
-	Coords coords;
 };
 
 struct TowerRequest {
@@ -114,6 +113,10 @@ public:
 
 	static Tile getTileFromCoords(const Coords& c) {
 		return Tile{ (short)(c.y / TILESIZE), (short)(c.x / TILESIZE) };
+	}
+
+	static Coords getCoordsFromTile(const Tile& t) {
+		return Coords{ t.col * TILESIZE, t.row * TILESIZE };
 	}
 
 	static void drawCircle(int& centerX, int& centerY, uint16_t& radius) {

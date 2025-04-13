@@ -85,11 +85,12 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             std::cout << "type: ENEMY_REQUEST\n";
             
             EnemyRequest er;
-			memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
-			enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
-            
+            memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
+            enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
+
             comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
             comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
+
 
             break;
         case (int)PacketType::TOWER_REQUEST:
@@ -118,7 +119,67 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 }
 
 void Game::networking(Comms* comms) {
+    //prvo posle da manjsa delay pol brise
+    for (int i : deletedEntityIDs) {
+        //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
+        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, gameID, attacker);
+
+        //std::cout << "defender host: " << defender.host << " port: " << defender.port << "\n";
+        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, gameID, defender);
+    }
+    deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
+
+    UDPpacket* recvPacket = SDLNet_AllocPacket(512);
+    if (comms->recieve(&recvPacket)) {
+        if (recvPacket->len == 0) {
+            std::cout << "ERROR: EMPTY PACKET";
+            return;
+        }
+        //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
+
+        std::cout << "recvPacket len: " << recvPacket->len << "\n";
+
+        ///PREVER KER PACKET JE PO PRVEM BYTU
+        switch ((Uint8)recvPacket->data[0]) {
+        case (int)PacketType::ENEMY_REQUEST:
+            std::cout << "type: ENEMY_REQUEST\n";
+
+            EnemyRequest er;
+            memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
+            enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
+
+            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
+            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
+
+
+            break;
+        case (int)PacketType::TOWER_REQUEST:
+            std::cout << "type: TOWER_REQUEST\n";
+
+            TowerRequest tr;
+            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
+            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
+
+            std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
+            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
+
+            towers.back()->print();
+            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
+            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
+
+            break;
+        default:
+            std::cout << "Unknown packet type.\n";
+            break;
+        }
+    }
+}
+
+/*
+void Game::networking(Comms* comms) {
     std::cout << "DONT USE THIS NETWORKING METHOD\n";
+    return;
+
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
         //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
@@ -145,7 +206,7 @@ void Game::networking(Comms* comms) {
 
             EnemyRequest er;
             memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
-            enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
+            enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
 
             comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
             comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, attacker);
@@ -169,7 +230,7 @@ void Game::networking(Comms* comms) {
             break;
         }
     }
-}
+}*/
 
 void Game::update() {
     
@@ -179,8 +240,11 @@ void Game::update() {
 
     for (auto& t : towers) {
         t->updateAllies();
-        
+		//std::cout << "tower checking\n";
+
         for (auto it = enemies.begin(); it != enemies.end();) {
+            //std::cout << "checking enemy-projectile collisoins\n";
+
             std::unique_ptr<Enemy>& e = *it;
             e->Update();
             ++it;
@@ -189,6 +253,7 @@ void Game::update() {
             if (t->moveProjectiles(p)) {
                 //uzame dmg glede na tower level in na projectile type
 				e->takeDamage(t->calcDmg(p->getType()));
+                std::cout << "enemy took damage: " << t->calcDmg(p->getType()) << "\n";
             }
 
             //k je enemy v dosegu
@@ -219,7 +284,6 @@ void Game::update() {
         if (!e->alive()) {
             int id = e->getID();
             deletedEntityIDs.emplace_back(id);
-            std::cout << "delete enemy id: " << id << " deleteVector size: " << deletedEntityIDs.size() << "\n";
             it = enemies.erase(it);
         }
         else {

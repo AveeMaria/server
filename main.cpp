@@ -120,6 +120,8 @@ int main() {
 			}
 			else {
 				it->update();
+				it->networking(&comms);
+
 				++it;
 			}
 		}

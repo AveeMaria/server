@@ -6,6 +6,7 @@
 
 #include "config.hpp"
 #include "TextureManager.hpp"
+#include "Utils.hpp"
 
 class Map {
 public:
@@ -26,8 +27,10 @@ public:
 	short getRow(short y);
 
     short value = 0;
+
+	Tile getSpawnTile() const { return spawn_tile; }
 private:
     SDL_Rect src, dest;
-
+    Tile spawn_tile = { 0, 1 };
     short map[MAP_ROWS][MAP_COLS];
 };
