@@ -47,7 +47,12 @@ public:
 
 	IPaddress getAttacker() const { return attacker; }
 	IPaddress getDefender() const { return defender; }
+
+	static uint8_t gameCnt;
+	uint8_t getGameID() { return gameID; }
 private:
+	uint8_t gameID = 0;
+
 	IPaddress attacker = { 0,0 };
 	IPaddress defender = { 0,0 };
 

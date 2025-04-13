@@ -28,6 +28,9 @@ public:
 
     template<typename T>
     bool stack_send(T data, IPaddress _ip);
+
+    template<typename T>
+    bool stack_send(T data, Uint8 gameID, IPaddress _ip);
     
 	//bool stupidSend(Uint8* data, size_t size) const;
 	
@@ -153,6 +156,47 @@ bool Comms::stack_send(T data, IPaddress _ip) {
     SDLNet_FreePacket(sendPacket);
     return true;
 }
+
+template<typename T>
+bool Comms::stack_send(T data, Uint8 gameID, IPaddress _ip) {
+    Uint8 type = checkType(data);
+    if (type == 255) return false;
+	if (gameID == 0) return false;//default game id
+
+    UDPpacket* sendPacket = SDLNet_AllocPacket(sizeof(T) + 2);
+
+    if (sendPacket == nullptr) {
+        std::cout << "ERROR: No packet\n";
+        return false;
+    }
+    if (!sendPacket) {
+        std::cout << "ERROR: No packet\n";
+        return false;
+    }
+
+    sendPacket->address.host = _ip.host;
+    sendPacket->address.port = _ip.port;
+
+    //std::cout << "Send packet size: " << sizeof(T) + 2 << "\n";
+    sendPacket->len = (sizeof(T) + 2);
+
+    //printBytes(reinterpret_cast<char*>(sendPacket->data), sizeof(T) + 2);
+
+    sendPacket->data[0] = type;
+    sendPacket->data[1] = gameID;
+    std::memcpy(&sendPacket->data[2], &data, sizeof(T));
+
+    if (SDLNet_UDP_Send(sock, -1, sendPacket) < 1) {
+        std::cerr << "ERROR: SDLNet_UDP_Send error: " << SDLNet_GetError() << "\n";
+        SDLNet_FreePacket(sendPacket);
+        return false;
+    }
+    //std::cout << "OK: poslan paket.\n";
+
+    SDLNet_FreePacket(sendPacket);
+    return true;
+}
+
 
 //to je sexy af
 /*

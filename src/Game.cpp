@@ -1,7 +1,5 @@
 #include "../include/Game.hpp"
 
-
-
 std::unique_ptr<Timer> timer;
 
 std::unique_ptr<Map> map;
@@ -14,13 +12,26 @@ std::vector<std::unique_ptr<Tower>> towers;
 
 Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
 {
+	gameCnt++;
+	gameID = gameCnt;
+
     attacker = _attacker;
     defender = _defender;
 
     isRunning = true;
 
-    map = std::make_unique<Map>();
+    std::cout << "sending game id\n";
+    if (comms.stack_send(InitGame{ gameID }, defender)) {
+        std::cout << "sent d\n";
+    }
+    comms.stack_send(InitGame{ gameID }, attacker);
 
+
+    comms.stack_send(Role{ false }, gameID, attacker);
+    comms.stack_send(Role{ true }, gameID, defender);
+
+    map = std::make_unique<Map>();
+    /*
     towers.emplace_back(std::make_unique<Tower>(TowerType::MAGE, Tile{ 3, 3 }));
     towers.emplace_back(std::make_unique<Tower>(TowerType::ARCHER, Tile{ 1, 3 }));
     towers.emplace_back(std::make_unique<Tower>(TowerType::BARRACKS, Tile{ 1, 4 }));
@@ -31,9 +42,6 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
     enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 1, 1 })));
 
     //std::cout << "ent_cnt: " << Entity::ent_cnt << "\n";
-
-    comms.stack_send(Role{ false }, attacker);
-    comms.stack_send(Role{ true }, defender);
     
     for (auto& t : towers) {
         comms.stack_send(CreateTower{ t->getID(), t->getRect(), (int)t->getType() }, attacker);
@@ -47,7 +55,7 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
 
     timer = std::make_unique<Timer>(90);
     comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
-    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
+    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);*/
 }
 
 
@@ -55,10 +63,10 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
         //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
-        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, attacker);
+        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, gameID, attacker);
 
         //std::cout << "defender host: " << defender.host << " port: " << defender.port << "\n";
-        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, defender);
+        comms.stack_send<DeleteEntity>(DeleteEntity{ i }, gameID, defender);
     }
 	deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
     
@@ -77,24 +85,26 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             std::cout << "type: ENEMY_REQUEST\n";
             
             EnemyRequest er;
-			memcpy(&er, &recvPacket->data[1], sizeof(EnemyRequest));
+			memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
 			enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
             
-            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
-            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, attacker);
+            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
+            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
 
             break;
         case (int)PacketType::TOWER_REQUEST:
             std::cout << "type: TOWER_REQUEST\n";
 
             TowerRequest tr;
-            memcpy(&tr, &recvPacket->data[1], sizeof(TowerRequest));
+            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
             //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
 
+            std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
 
-            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, attacker);
-            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, defender);
+            towers.back()->print();
+            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
+            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
 
             break;
         default:
@@ -108,6 +118,7 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 }
 
 void Game::networking(Comms* comms) {
+    std::cout << "DONT USE THIS NETWORKING METHOD\n";
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
         //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
@@ -133,7 +144,7 @@ void Game::networking(Comms* comms) {
             std::cout << "type: ENEMY_REQUEST\n";
 
             EnemyRequest er;
-            memcpy(&er, &recvPacket->data[1], sizeof(EnemyRequest));
+            memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
             enemies.emplace_back(std::make_unique<Enemy>(er.coords, er.type));
 
             comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
@@ -144,7 +155,7 @@ void Game::networking(Comms* comms) {
             std::cout << "type: TOWER_REQUEST\n";
 
             TowerRequest tr;
-            memcpy(&tr, &recvPacket->data[1], sizeof(TowerRequest));
+            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
             //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
 
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
@@ -161,10 +172,8 @@ void Game::networking(Comms* comms) {
 }
 
 void Game::update() {
-    if (timer->done()) {
-        //std::cout << "timer finished\n";
-    }
-    else {
+    
+    if(timer) {
         timer->updateTimer();
     }
 

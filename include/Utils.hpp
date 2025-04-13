@@ -91,6 +91,10 @@ struct Role {
 	bool defender;//true = defender, false = attacker
 };
 
+struct InitGame {
+	Uint8 gameID;
+};
+
 struct EnemyRequest {
 	int type;
 	Coords coords;

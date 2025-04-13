@@ -12,6 +12,7 @@ std::vector<Game> games;//matches that happen now
 //std::map<IPaddress, std::string> playerNames;>
 
 int Entity::ent_cnt = 100;
+uint8_t Game::gameCnt = 0;
 
 const int frameDelay = 1000 / FPS;
 
@@ -69,6 +70,7 @@ int main() {
 				//std::cout << "type: ACK\n";
 
 				//doda clienta v seznam clientov, ne duplicated
+				/*
 				{
 					auto it = std::find_if(clients.begin(), clients.end(), [&](const IPaddress& addr) {
 						return addr.host == recvPacket->address.host && addr.port == recvPacket->address.port;
@@ -79,47 +81,26 @@ int main() {
 					else {
 						std::cout << "client " << recvPacket->address.host << " already connected\n";
 					}
-				}
-
-			std::cout << "client " << recvPacket->address.host << " on port: " << recvPacket->address.port << " connected\n";
-
-			if (clients.size() == 2) {
-				games.emplace_back(Game(clients[0], clients[1], comms));
-				std::cout << "Game Started\n";
-			}
-
-			break;
-
-			case (int)PacketType::TOWER_REQUEST:
-				std::cout << "main: TOWER_REQUEST\n";
-				for (auto& g : games) {
-					std::cout << "game checked\n";
-					if (Comms::ipEquals(g.getAttacker(), recvPacket->address)) {
-						g.networking(comms, recvPacket);
-						std::cout << "game FOUND";
-					}
-				}
-
-				break;
-			case (int)PacketType::ENEMY_REQUEST:
-				/*
-				for (auto it = games.begin(); it != games.end();) {
-					if (it->getAttacker().host == recvPacket->address.host && it->getAttacker().port == recvPacket->address.port) {
-						it->networking(comms, recvPacket);
-						break;
-					}
-					else if (it->getDefender().host == recvPacket->address.host && it->getDefender().port == recvPacket->address.port) {
-
-						break;
-					}
-					else {
-						++it;
-					}
 				}*/
+				clients.emplace_back(recvPacket->address);
+
+				std::cout << "client " << recvPacket->address.host << " on port: " << recvPacket->address.port << " connected\n";
+
+				if (clients.size() == 2) {
+					games.emplace_back(Game(clients[0], clients[1], comms));
+					std::cout << "Game Started\n";
+					games.clear();
+				}
 
 				break;
 			default:
-				std::cout << "WARNING: Unknown packet type.\n";
+				for (auto& g : games) {
+					if (g.getGameID() == recvPacket->data[1]) {
+						std::cout << "game id: " << g.getGameID() << "\n";
+						g.networking(comms, recvPacket);
+					}
+				}
+
 				break;
 			}
 		}
@@ -139,7 +120,6 @@ int main() {
 			}
 			else {
 				it->update();
-				it->networking(&comms);
 				++it;
 			}
 		}
