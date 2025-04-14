@@ -152,7 +152,6 @@ void Game::networking(Comms* comms) {
             comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
             comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
 
-
             break;
         case (int)PacketType::TOWER_REQUEST:
             std::cout << "type: TOWER_REQUEST\n";
@@ -164,7 +163,6 @@ void Game::networking(Comms* comms) {
             std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
 
-            towers.back()->print();
             comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
             comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
 
@@ -197,7 +195,7 @@ void Game::update() {
             if (t->moveProjectiles(p)) {
                 //uzame dmg glede na tower level in na projectile type
 				e->takeDamage(t->calcDmg(p->getType()));
-                std::cout << "enemy took damage: " << t->calcDmg(p->getType()) << "\n";
+                //std::cout << "enemy took damage: " << t->calcDmg(p->getType()) << "\n";
             }
 
             //k je enemy v dosegu

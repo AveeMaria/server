@@ -100,8 +100,8 @@ Enemy::Enemy(Coords& c) : Entity(c) {
     Update();
 }
 
-Enemy::Enemy(Coords& c, int& _type) : Entity(c) {
-    type = static_cast<EnemyType>(_type);
+Enemy::Enemy(Coords& c, int _type) : Entity(c) {
+    type = static_cast<EnemyType>(_type );
     Update();
 }
 

@@ -51,6 +51,7 @@ public:
 	static uint8_t gameCnt;
 	uint8_t getGameID() { return gameID; }
 private:
+
 	uint8_t gameID = 0;
 
 	IPaddress attacker = { 0,0 };

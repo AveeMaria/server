@@ -39,8 +39,7 @@ int main() {
 
 	while (true) {
 		while (comms.recieve(&recvPacket)) {
-			//printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
-
+			std::cout << "paketek.\n";
 			///PREVER KER PACKET JE PO PRVEM BYTU
 			switch ((int)recvPacket->data[0]) {
 			case (int)PacketType::PING:
@@ -66,9 +65,8 @@ int main() {
 
 			case (int)PacketType::ACK:
 				//std::cout << "type: ACK\n";
-
+				// 
 				//doda clienta v seznam clientov, ne duplicated
-				/*
 				{
 					auto it = std::find_if(clients.begin(), clients.end(), [&](const IPaddress& addr) {
 						return addr.host == recvPacket->address.host && addr.port == recvPacket->address.port;
@@ -77,16 +75,16 @@ int main() {
 						clients.emplace_back(recvPacket->address);
 					}
 					else {
-						std::cout << "client " << recvPacket->address.host << " already connected\n";
+						std::cout << "client " << Comms::ipAddressToString(recvPacket->address) << " already connected\n";
 					}
-				}*/
+				}
 
-				std::cout << "client " << Comms::ipAddressToString(recvPacket->address) << " on port: " << recvPacket->address.port << " connected\n";
-				clients.emplace_back(recvPacket->address);
+ 				std::cout << "client " << Comms::ipAddressToString(recvPacket->address) << " on port: " << recvPacket->address.port << " connected\n";
 
 				if (clients.size() == 2) {
 					games.emplace_back(Game(clients[0], clients[1], comms));
-					//LoggerSQL::logGame(Comms::ipAddressToString(games.back().getAttacker()), Comms::ipAddressToString(games.back().getDefender()));
+					//tezave z crashanim MySQLom k se ne zarunna vec u XAMPPu
+					//LoggerSQL::logGameSafe(Comms::ipAddressToString(games.back().getAttacker()), Comms::ipAddressToString(games.back().getDefender()));
 					std::cout << "Game Started\n";
 					clients.clear();
 				}

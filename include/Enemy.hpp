@@ -18,7 +18,7 @@ class Enemy : public Entity {
 private:
 	EnemyType type;
 
-	short hp = 20;
+	short hp = 100;
 
 	SDL_Rect prevRect = destRect;
 
@@ -32,7 +32,7 @@ public:
 
 	Enemy();
 	Enemy(Coords& c);
-	Enemy(Coords& c, int& _type);
+	Enemy(Coords& c, int _type);
 
 
 	void Update() override;
@@ -49,6 +49,11 @@ public:
 	int getHP() const { return hp; }
 
 	EnemyType getType() const { return type; }
+
+	void print() const {
+		std::cout << "Enemy: " << id << " type: " << (int)type << " hp: " << hp << "\n";
+		std::cout << "x: " << destRect.x << " y: " << destRect.y << "\n";
+	}
 
 	~Enemy() {}
 };

@@ -31,6 +31,6 @@ public:
 	Tile getSpawnTile() const { return spawn_tile; }
 private:
     SDL_Rect src, dest;
-    Tile spawn_tile = { 0, 1 };
+    Tile spawn_tile = { 1, 0 };
     short map[MAP_ROWS][MAP_COLS];
 };
