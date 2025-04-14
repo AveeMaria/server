@@ -52,10 +52,11 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
         comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, defender);
         comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, attacker);
     }
-
+*/
     timer = std::make_unique<Timer>(90);
+
     comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
-    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);*/
+    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
 }
 
 
@@ -174,63 +175,6 @@ void Game::networking(Comms* comms) {
         }
     }
 }
-
-/*
-void Game::networking(Comms* comms) {
-    std::cout << "DONT USE THIS NETWORKING METHOD\n";
-    return;
-
-    //prvo posle da manjsa delay pol brise
-    for (int i : deletedEntityIDs) {
-        //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
-        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, attacker);
-
-        //std::cout << "defender host: " << defender.host << " port: " << defender.port << "\n";
-        comms->stack_send<DeleteEntity>(DeleteEntity{ i }, defender);
-    }
-    deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
-
-    UDPpacket* recvPacket = SDLNet_AllocPacket(512);
-    if (comms->recieve(&recvPacket)) {
-        if (recvPacket->len == 0) {
-            std::cout << "ERROR: EMPTY PACKET";
-            //continue;
-            return;
-        }
-        //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
-
-        ///PREVER KER PACKET JE PO PRVEM BYTU
-        switch ((Uint8)recvPacket->data[0]) {
-        case (int)PacketType::ENEMY_REQUEST:
-            std::cout << "type: ENEMY_REQUEST\n";
-
-            EnemyRequest er;
-            memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
-            enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
-
-            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, defender);
-            comms->stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, attacker);
-
-            break;
-        case (int)PacketType::TOWER_REQUEST:
-            std::cout << "type: TOWER_REQUEST\n";
-
-            TowerRequest tr;
-            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
-            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
-
-            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
-
-            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), er.type }, attacker);
-            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), er.type }, defender);
-
-            break;
-        default:
-            std::cout << "Unknown packet type.\n";
-            break;
-        }
-    }
-}*/
 
 void Game::update() {
     

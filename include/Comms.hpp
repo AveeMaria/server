@@ -51,6 +51,13 @@ public:
     IPaddress Comms::getRemoteIP() const {
         return ip;
     }
+
+    static const char* ipAddressToString(const IPaddress& ip) {
+        static char ipStr[64];
+        Uint32 ipAddress = ip.host;
+        snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", (ipAddress >> 24) & 0xFF, (ipAddress >> 16) & 0xFF, (ipAddress >> 8) & 0xFF, ipAddress & 0xFF);
+        return ipStr;
+    }
 };
 
 //////////////////////////

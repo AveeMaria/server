@@ -3,7 +3,8 @@
 #include <vector>
 #include <thread>
 #include "include/Game.hpp"
-#include <cstdlib>
+#include "include/LoggerSQL.hpp"
+//#include <cstdlib>
 
 std::vector<IPaddress> clients;//connected clients
 
@@ -16,12 +17,9 @@ uint8_t Game::gameCnt = 0;
 
 const int frameDelay = 1000 / FPS;
 
-
 int main() {
-	//std::cout << "Entity count initalized: " << Entity::ent_cnt << "\n";
-
-	//za kasnejsi mysql logging
-	//system("C:\\xampp\\mysql\\bin\\mysql.exe -u root -p\"\" -D \"DATABASE\" - e \"SELECT name FROM test;\" > output.txt");
+	//start MySQL
+	//LoggerSQL::startMySQL();
 
 	std::cout << "SERVERSIDE\n";
 
@@ -82,14 +80,15 @@ int main() {
 						std::cout << "client " << recvPacket->address.host << " already connected\n";
 					}
 				}*/
-				clients.emplace_back(recvPacket->address);
 
-				std::cout << "client " << recvPacket->address.host << " on port: " << recvPacket->address.port << " connected\n";
+				std::cout << "client " << Comms::ipAddressToString(recvPacket->address) << " on port: " << recvPacket->address.port << " connected\n";
+				clients.emplace_back(recvPacket->address);
 
 				if (clients.size() == 2) {
 					games.emplace_back(Game(clients[0], clients[1], comms));
+					//LoggerSQL::logGame(Comms::ipAddressToString(games.back().getAttacker()), Comms::ipAddressToString(games.back().getDefender()));
 					std::cout << "Game Started\n";
-					games.clear();
+					clients.clear();
 				}
 
 				break;
