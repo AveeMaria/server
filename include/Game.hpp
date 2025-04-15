@@ -57,12 +57,19 @@ private:
 	IPaddress attacker = { 0,0 };
 	IPaddress defender = { 0,0 };
 
+	//last time server sendt ping to cleint
+	Uint32 lastAttackerPing = 0;
+	Uint32 lastDefenderPing = 0;
+
 	std::vector<int> deletedEntityIDs;
 
 	bool isRunning = false;
 	bool paused = false;
 	bool mouse_down = false;
 	bool map_editor_mode = false;
+
+	int attackerMoney;
+	int defenderMoney;
 
 	Uint32 lastMoveTime = 0;
 	Uint32 lastclick = 0;

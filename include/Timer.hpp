@@ -1,27 +1,28 @@
 #pragma once
 
-#include "Entity.hpp"
+#include <chrono>
 #include <sstream>
+#include <iostream>
+#include <string>
 
 class Timer {
-private:
-	uint32_t start_time;
-	uint32_t curr_time;
-
-	uint32_t seconds;//kok sekund (auto mnozi z 1000) 
-	bool finished;
 public:
-	Timer();
-	Timer(uint32_t sec);
-	~Timer() {}
+    Timer();
+    Timer(uint32_t sec);
 
-	std::string getFancyTime() const;
+    std::string getFancyTime() const;
 
-	void updateTimer();
+    void updateTimer();
 
-	bool done() const { return finished; }
+    void restart();
 
-	Uint32 getSeconds() const { return seconds; }
+    uint32_t getSeconds() const;
 
-	void restart();
+    bool finished;
+private:
+    std::chrono::steady_clock::time_point start_time;
+
+    std::chrono::milliseconds duration;
 };
+
+

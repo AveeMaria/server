@@ -104,6 +104,13 @@ struct TowerRequest {
 	Coords coords;
 };
 
+struct MoneyInit {
+	int money;
+};
+
+struct TerminateGame {
+	bool terminate;
+};
 
 class Utils {
 public:

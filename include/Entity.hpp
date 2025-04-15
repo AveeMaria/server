@@ -54,6 +54,7 @@ public:
 
 	Coords getCoords() const;
 	SDL_Rect getRect() const;
+	
 
     void setTilePos(short row, short col) { this->xpos = row * TILESIZE; this->ypos = col * TILESIZE; }
 };

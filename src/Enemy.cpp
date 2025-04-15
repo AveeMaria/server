@@ -73,7 +73,7 @@ void Enemy::Move(std::unique_ptr<Map>& m) {
                     }
                     break;
                 default:
-                    char c = 'a';//da default ne joka
+                    int privzeto;//da default ne joka
                     //nemore se premikat, nej crkne al neki?
                 }
 
@@ -92,6 +92,22 @@ void Enemy::Move(std::unique_ptr<Map>& m) {
 
 Enemy::Enemy() : Entity(0, 0) {
     type = static_cast<EnemyType>(std::rand() % 4);
+
+    switch (type) {
+    case EnemyType::GOBLIN:
+        hp = 30;
+        break;
+    case EnemyType::THIEF:
+        hp = 80;
+        break;
+    case EnemyType::BANDIT:
+        hp = 50;
+        break;
+    case EnemyType::KNIGHT:
+        hp = 150;
+        break;
+    }
+
     Update();
 }
 
@@ -156,4 +172,22 @@ void Enemy::right()
         return;
     }
     xpos += (short)step;
+}
+
+int Enemy::getPrice(int _type) {
+    switch (static_cast<EnemyType>(_type - 1)) {
+    case EnemyType::GOBLIN:
+        return 10;
+        break;
+    case EnemyType::THIEF:
+        return 20;
+        break;
+    case EnemyType::BANDIT:
+        return 30;
+        break;
+    case EnemyType::KNIGHT:
+        return 50;
+        break;
+    }
+    return 0;
 }

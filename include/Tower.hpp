@@ -70,4 +70,5 @@ public:
 	int projCount() { return (int)projectiles.size(); }
 
 	void Update() override;
+	static int getPrice(int _type);
 };

@@ -46,6 +46,7 @@ public:
 	void left();
 	void right();
 
+
 	int getHP() const { return hp; }
 
 	EnemyType getType() const { return type; }
@@ -54,6 +55,8 @@ public:
 		std::cout << "Enemy: " << id << " type: " << (int)type << " hp: " << hp << "\n";
 		std::cout << "x: " << destRect.x << " y: " << destRect.y << "\n";
 	}
+
+	static int getPrice(int _type);
 
 	~Enemy() {}
 };

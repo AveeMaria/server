@@ -218,3 +218,20 @@ void Tower::Update()
 	destRect.h = TILESIZE;
 }
 
+int Tower::getPrice(int _type) {
+	switch (static_cast<TowerType>(_type)) {
+	case TowerType::ARCHER:
+		return 70;
+		break;
+	case TowerType::MAGE:
+		return 70;
+		break;
+	case TowerType::BARRACKS:
+		return 90;
+		break;
+	case TowerType::MORTAR:
+		return 100;
+		break;
+	}
+	return 0;
+}

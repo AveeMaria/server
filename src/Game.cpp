@@ -20,45 +20,24 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
 
     isRunning = true;
 
-    std::cout << "sending game id\n";
-    if (comms.stack_send(InitGame{ gameID }, defender)) {
-        std::cout << "sent d\n";
-    }
+	comms.stack_send(InitGame{ gameID }, defender);
     comms.stack_send(InitGame{ gameID }, attacker);
-
 
     comms.stack_send(Role{ false }, gameID, attacker);
     comms.stack_send(Role{ true }, gameID, defender);
 
-    map = std::make_unique<Map>();
-    /*
-    towers.emplace_back(std::make_unique<Tower>(TowerType::MAGE, Tile{ 3, 3 }));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::ARCHER, Tile{ 1, 3 }));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::BARRACKS, Tile{ 1, 4 }));
-    towers.emplace_back(std::make_unique<Tower>(TowerType::MORTAR, Tile{ 3, 5 }));
+    map = std::make_unique<Map>(); 
+    timer = std::make_unique<Timer>(90);//////////TIMER 180s
 
-    enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 1, 0 })));
-    enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 2, 2 })));
-    enemies.emplace_back(std::make_unique<Enemy>(Utils::getTileMiddle(Tile{ 1, 1 })));
+	attackerMoney = 300;
+    defenderMoney = 300;
 
-    //std::cout << "ent_cnt: " << Entity::ent_cnt << "\n";
-    
-    for (auto& t : towers) {
-        comms.stack_send(CreateTower{ t->getID(), t->getRect(), (int)t->getType() }, attacker);
-        comms.stack_send(CreateTower{ t->getID(), t->getRect(), (int)t->getType() }, defender);
-    }
+    comms.stack_send(MoneyInit{ attackerMoney }, gameID, attacker);
+    comms.stack_send(MoneyInit{ defenderMoney }, gameID, defender);
 
-    for (auto& e : enemies) {
-        comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, defender);
-        comms.stack_send(CreateEnemy{ e->getID(), e->getRect(), (int)e->getType() }, attacker);
-    }
-*/
-    timer = std::make_unique<Timer>(90);
-
-    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
-    comms.stack_send(InitTimer{ timer->getSeconds() }, attacker);
+    comms.stack_send(InitTimer{ timer->getSeconds() * 1000 }, gameID, attacker);
+    comms.stack_send(InitTimer{ timer->getSeconds() * 1000 }, gameID, defender);
 }
-
 
 void Game::networking(Comms& comms, UDPpacket* recvPacket) {
     //prvo posle da manjsa delay pol brise
@@ -87,11 +66,21 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             
             EnemyRequest er;
             memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
-            enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
+            
+			std::cout << "enemy price " << Enemy::getPrice(er.type) << "\n";
 
-            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
-            comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
+			if (Enemy::getPrice(er.type) > attackerMoney) {
+                //kent buy enemy
+				break;
+			}
+            else {
+				attackerMoney -= Enemy::getPrice(er.type);
+				std::cout << "attacker money: " << attackerMoney << "\n";
 
+                enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
+                comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
+                comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, attacker);
+            }
 
             break;
         case (int)PacketType::TOWER_REQUEST:
@@ -99,15 +88,21 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 
             TowerRequest tr;
             memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
-            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
 
             std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
 
-            towers.back()->print();
-            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
-            comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
+			if (Tower::getPrice(tr.type) > defenderMoney) {
+				//kent buy tower
+				break;
+			}
+			else {
+                defenderMoney -= Tower::getPrice(tr.type);
+				std::cout << "defender money: " << defenderMoney << "\n";
 
+                comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
+                comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
+			}
             break;
         default:
             std::cout << "Unknown packet type.\n";
@@ -120,6 +115,11 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 }
 
 void Game::networking(Comms* comms) {
+	if (!isRunning) {
+        comms->stack_send(TerminateGame{ true }, gameID, attacker);
+        comms->stack_send(TerminateGame{ true }, gameID, defender);
+	}
+    
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
         //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
@@ -172,12 +172,17 @@ void Game::networking(Comms* comms) {
             break;
         }
     }
+    SDLNet_FreePacket(recvPacket);
 }
 
 void Game::update() {
     
     if(timer) {
         timer->updateTimer();
+		if (timer->finished) {
+			std::cout << "game over\n";
+			isRunning = false;
+		}
     }
 
     for (auto& t : towers) {
@@ -206,8 +211,6 @@ void Game::update() {
                 if (t->canShoot(SDL_GetTicks())) {
                     t->makeProjecitle();
                 }
-
-                SDL_RenderDrawLine(Renderer::renderer, Utils::rectMiddle(t->getRect()).x, Utils::rectMiddle(t->getRect()).y, Utils::rectMiddle(e->getRect()).x, Utils::rectMiddle(e->getRect()).y);
 
                 break;//da strelja samo eneega enemyja na enkat
             }

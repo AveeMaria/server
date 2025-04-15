@@ -1,48 +1,52 @@
 #include "../include/Timer.hpp"
 
-Timer::Timer()
-{
-	start_time = SDL_GetTicks();
-	seconds = 60 * 1000;
-	finished = false;
+Timer::Timer() : start_time(std::chrono::steady_clock::now()),
+duration(60 * 1000), finished(false) {
 }
 
-Timer::Timer(uint32_t sec)
-{
-	start_time = SDL_GetTicks();
-	seconds = sec * 1000;//kr je v ms
-	finished = false;
+//mnozi sec da pridejo milisekunde
+Timer::Timer(uint32_t sec) : start_time(std::chrono::steady_clock::now()), 
+duration(sec * 1000), finished(false) {
 }
 
 std::string Timer::getFancyTime() const {
-	if (finished) {		
-		return "00:00";
-	}
+    if (finished) {
+        return "00:00";
+    }
 
-	uint32_t time = (seconds - (start_time + curr_time)) / 1000;
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
 
-	std::stringstream ss;
-	ss << time / 60 << ":";
+    auto remaining = duration - elapsed;
+    if (remaining.count() < 0) {
+        remaining = std::chrono::milliseconds(0);
+    }
 
-	//ne deletat (da so tud minute prov formated)
-	//time / 60 < 10 ? ss << "0" << time / 60 : ss << time / 60; ss << ":";
+    auto total_seconds = std::chrono::duration_cast<std::chrono::seconds>(remaining).count();
+    int minutes = static_cast<int>(total_seconds / 60);
+    int seconds_remaining = static_cast<int>(total_seconds % 60);
 
-	time % 60 < 10 ? ss << "0" << time % 60 : ss << time % 60;
+    std::string minutes_str = (minutes < 10) ? "0" + std::to_string(minutes) : std::to_string(minutes);
+    std::string seconds_str = (seconds_remaining < 10) ? "0" + std::to_string(seconds_remaining) : std::to_string(seconds_remaining);
 
-	return ss.str();
+    return minutes_str + ":" + seconds_str;
 }
 
 void Timer::updateTimer() {
-	curr_time = SDL_GetTicks();
-	
-	if (curr_time + start_time >= seconds) {
-		finished = true;
-	}
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+
+    if (elapsed >= duration) {
+        finished = true;
+    }
 }
 
-void Timer::restart()
-{
-	start_time = SDL_GetTicks();
-	finished = false;
-	std::cout << "timer restarted\n";
+void Timer::restart() {
+    start_time = std::chrono::steady_clock::now();
+    finished = false;
+    std::cout << "timer restarted\n";
+}
+
+uint32_t Timer::getSeconds() const {
+    return static_cast<uint32_t>(duration.count() / 1000);
 }

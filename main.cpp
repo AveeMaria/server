@@ -17,9 +17,11 @@ uint8_t Game::gameCnt = 0;
 
 const int frameDelay = 1000 / FPS;
 
+//std::string LoggerSQL::url = "http://localhost/game/vnos.php?attacker=";
+std::string LoggerSQL::url = "http://localhost/game/vnos.php";
+
 int main() {
-	//start MySQL
-	//LoggerSQL::startMySQL();
+	LoggerSQL::getUrlFromFile();
 
 	std::cout << "SERVERSIDE\n";
 
@@ -84,7 +86,7 @@ int main() {
 				if (clients.size() == 2) {
 					games.emplace_back(Game(clients[0], clients[1], comms));
 					//tezave z crashanim MySQLom k se ne zarunna vec u XAMPPu
-					//LoggerSQL::logGameSafe(Comms::ipAddressToString(games.back().getAttacker()), Comms::ipAddressToString(games.back().getDefender()));
+					LoggerSQL::logGameSafe(Comms::ipAddressToString(clients[0]), Comms::ipAddressToString(clients[1]));
 					std::cout << "Game Started\n";
 					clients.clear();
 				}

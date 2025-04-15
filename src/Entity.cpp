@@ -45,3 +45,5 @@ Coords Entity::getCoords() const {
 SDL_Rect Entity::getRect() const {
 	return destRect;
 }
+
+
