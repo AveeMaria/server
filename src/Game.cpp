@@ -27,7 +27,7 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
     comms.stack_send(Role{ true }, gameID, defender);
 
     map = std::make_unique<Map>(); 
-    timer = std::make_unique<Timer>(30);//////////TIMER 180s
+    timer = std::make_unique<Timer>(120);//////////TIMER 180s
 
 	attackerMoney = 300;
     defenderMoney = 300;
@@ -61,6 +61,40 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
     }
     msUpdateD.clear();
 
+    //send ping evry 10 seconds
+    if (Utils::getTimeMs() - lastSentPing >= max_ping_time) {
+        comms.stack_send(PING{ 0 }, gameID, defender);
+        comms.stack_send(PING{ 0 }, gameID, attacker);
+        lastSentPing = Utils::getTimeMs();
+    }
+
+    if (lastDefenderPing != 0 && lastAttackerPing != 0) {
+        auto currTime = Utils::getTimeMs();
+        //po 10 sekundah disconectej clienta
+        if (currTime - lastDefenderPing >= 2 * max_ping_time) {
+            std::cout << "defender disconected\n";
+            attackerScore += 100000;
+            isRunning = false;
+        }
+        if (currTime - lastAttackerPing >= 2 * max_ping_time) {
+            std::cout << "attacker disconected\n";
+            defenderScore += 100000;
+            isRunning = false;
+        }
+    }
+
+
+    if (!isRunning) {
+        if (defenderScore < attackerScore) {
+            comms.stack_send(TerminateGame{ true }, gameID, attacker);
+            comms.stack_send(TerminateGame{ true }, gameID, defender);
+        }
+        else {
+            comms.stack_send(TerminateGame{ false }, gameID, attacker);
+            comms.stack_send(TerminateGame{ false }, gameID, defender);
+        }
+    }
+
     if (recvPacket) {
         if (recvPacket->len == 0) {
             std::cout << "ERROR: EMPTY PACKET";
@@ -71,6 +105,18 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 
         ///PREVER KER PACKET JE PO PRVEM BYTU
         switch ((Uint8)recvPacket->data[0]) {
+        case (int)PacketType::PONG:
+            if (recvPacket->address.host == attacker.host) {
+                lastAttackerPing = Utils::getTimeMs();
+            }
+            else if (recvPacket->address.host == defender.host) {
+                lastDefenderPing = Utils::getTimeMs();
+            }
+            else {
+                std::cout << "UNRECOGNISED PONG\n";
+            }
+
+            break;
         case (int)PacketType::ENEMY_REQUEST:
             std::cout << "type: ENEMY_REQUEST\n";
             
@@ -131,17 +177,19 @@ void Game::networking(Comms* comms) {
         comms->stack_send(PING{ 0 }, gameID, attacker);
     }
 
-    auto currTime = Utils::getTimeMs();
-    //po 10 sekundah disconectej clienta
-    if (currTime - lastDefenderPing >= 2 * max_ping_time) {
-        std::cout << "defender disconected\n";
-        attackerScore += 100000;
-        isRunning = false;
-    }
-    if (currTime - lastAttackerPing >= 2 * max_ping_time) {
-        std::cout << "attacker disconected\n";
-        defenderScore += 100000;
-        isRunning = false;
+    if (lastDefenderPing != 0 && lastAttackerPing != 0) {
+        auto currTime = Utils::getTimeMs();
+        //po 10 sekundah disconectej clienta
+        if (currTime - lastDefenderPing >= 2 * max_ping_time) {
+            std::cout << "defender disconected\n";
+            attackerScore += 100000;
+            isRunning = false;
+        }
+        if (currTime - lastAttackerPing >= 2 * max_ping_time) {
+            std::cout << "attacker disconected\n";
+            defenderScore += 100000;
+            isRunning = false;
+        }
     }
 
 	if (!isRunning) {
@@ -154,7 +202,6 @@ void Game::networking(Comms* comms) {
             comms->stack_send(TerminateGame{ false }, gameID, defender);
         }
 	}
-
 
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
@@ -195,10 +242,10 @@ void Game::networking(Comms* comms) {
         ///PREVER KER PACKET JE PO PRVEM BYTU
         switch ((Uint8)recvPacket->data[0]) {
         case (int)PacketType::PONG:
-            if (recvPacket->address.host == attacker.host && recvPacket->address.port == attacker.port) {
+            if (recvPacket->address.host == attacker.host) {
                 lastAttackerPing = Utils::getTimeMs();
             }
-            else if (recvPacket->address.host == defender.host && recvPacket->address.port == defender.port) {
+            else if (recvPacket->address.host == defender.host) {
                 lastDefenderPing = Utils::getTimeMs();
             }
             else {
