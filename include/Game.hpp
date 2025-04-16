@@ -60,16 +60,21 @@ private:
 	//last time server sendt ping to cleint
 	Uint32 lastAttackerPing = 0;
 	Uint32 lastDefenderPing = 0;
+	Uint32 lastSentPing = 0;
 
 	std::vector<int> deletedEntityIDs;
+	std::vector<MoneyScoreUpdateA> msUpdateA;
+	std::vector<MoneyScoreUpdateD> msUpdateD;
 
 	bool isRunning = false;
 	bool paused = false;
 	bool mouse_down = false;
 	bool map_editor_mode = false;
 
-	int attackerMoney;
-	int defenderMoney;
+	int attackerMoney = 0;
+	int defenderMoney = 0;
+
+	int attackerScore = 0, defenderScore = 0;
 
 	Uint32 lastMoveTime = 0;
 	Uint32 lastclick = 0;

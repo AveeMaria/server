@@ -27,7 +27,7 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
     comms.stack_send(Role{ true }, gameID, defender);
 
     map = std::make_unique<Map>(); 
-    timer = std::make_unique<Timer>(90);//////////TIMER 180s
+    timer = std::make_unique<Timer>(30);//////////TIMER 180s
 
 	attackerMoney = 300;
     defenderMoney = 300;
@@ -50,14 +50,24 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
     }
 	deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
     
+    for (auto& ms : msUpdateA) {
+        comms.stack_send(msUpdateA.back(), gameID, attacker);
+        comms.stack_send( msUpdateA.back(), gameID, defender);
+    }
+    msUpdateA.clear();
+    for (auto& ms : msUpdateD) {
+        comms.stack_send(msUpdateD.back(), gameID, defender);
+        comms.stack_send(msUpdateD.back(), gameID, attacker);
+    }
+    msUpdateD.clear();
+
     if (recvPacket) {
         if (recvPacket->len == 0) {
             std::cout << "ERROR: EMPTY PACKET";
             return;
         }
         //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
-
-		std::cout << "recvPacket len: " << recvPacket->len << "\n";
+		//std::cout << "recvPacket len: " << recvPacket->len << "\n";
 
         ///PREVER KER PACKET JE PO PRVEM BYTU
         switch ((Uint8)recvPacket->data[0]) {
@@ -67,7 +77,7 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             EnemyRequest er;
             memcpy(&er, &recvPacket->data[2], sizeof(EnemyRequest));
             
-			std::cout << "enemy price " << Enemy::getPrice(er.type) << "\n";
+			//std::cout << "enemy price " << Enemy::getPrice(er.type) << "\n";
 
 			if (Enemy::getPrice(er.type) > attackerMoney) {
                 //kent buy enemy
@@ -75,7 +85,7 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 			}
             else {
 				attackerMoney -= Enemy::getPrice(er.type);
-				std::cout << "attacker money: " << attackerMoney << "\n";
+				//std::cout << "attacker money: " << attackerMoney << "\n";
 
                 enemies.emplace_back(std::make_unique<Enemy>(Utils::getCoordsFromTile(map->getSpawnTile()), er.type));
                 comms.stack_send(CreateEnemy{ enemies.back()->getID(), enemies.back()->getRect(), er.type }, gameID, defender);
@@ -89,7 +99,7 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             TowerRequest tr;
             memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
 
-            std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
+            //std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
 
 			if (Tower::getPrice(tr.type) > defenderMoney) {
@@ -98,7 +108,7 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 			}
 			else {
                 defenderMoney -= Tower::getPrice(tr.type);
-				std::cout << "defender money: " << defenderMoney << "\n";
+				//std::cout << "defender money: " << defenderMoney << "\n";
 
                 comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
                 comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
@@ -115,11 +125,37 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
 }
 
 void Game::networking(Comms* comms) {
+    //send ping evry 10 seconds
+    if (Utils::getTimeMs() - lastSentPing >= max_ping_time) {
+        comms->stack_send(PING{ 0 }, gameID, defender);
+        comms->stack_send(PING{ 0 }, gameID, attacker);
+    }
+
+    auto currTime = Utils::getTimeMs();
+    //po 10 sekundah disconectej clienta
+    if (currTime - lastDefenderPing >= 2 * max_ping_time) {
+        std::cout << "defender disconected\n";
+        attackerScore += 100000;
+        isRunning = false;
+    }
+    if (currTime - lastAttackerPing >= 2 * max_ping_time) {
+        std::cout << "attacker disconected\n";
+        defenderScore += 100000;
+        isRunning = false;
+    }
+
 	if (!isRunning) {
-        comms->stack_send(TerminateGame{ true }, gameID, attacker);
-        comms->stack_send(TerminateGame{ true }, gameID, defender);
+        if (defenderScore < attackerScore) {
+            comms->stack_send(TerminateGame{ true }, gameID, attacker);
+            comms->stack_send(TerminateGame{ true }, gameID, defender);
+        }
+        else {
+            comms->stack_send(TerminateGame{ false }, gameID, attacker);
+            comms->stack_send(TerminateGame{ false }, gameID, defender);
+        }
 	}
-    
+
+
     //prvo posle da manjsa delay pol brise
     for (int i : deletedEntityIDs) {
         //std::cout << "atacket host: " << attacker.host << " port: " << attacker.port << "\n";
@@ -129,6 +165,22 @@ void Game::networking(Comms* comms) {
         comms->stack_send<DeleteEntity>(DeleteEntity{ i }, gameID, defender);
     }
     deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
+
+    for (auto& ms : msUpdateA) {
+        std::cout << "attacker money: " << ms.money << " score: " << ms.score << "\n";
+
+        comms->stack_send(MoneyScoreUpdateA { ms.money, ms.score }, gameID, attacker);
+        comms->stack_send(MoneyScoreUpdateA { ms.money, ms.score }, gameID, defender);
+    }
+    msUpdateA.clear();
+
+    for (auto& ms : msUpdateD) {
+        std::cout << "defender money: " << ms.money << " score: " << ms.score << "\n";
+
+        comms->stack_send(MoneyScoreUpdateD{ ms.money, ms.score }, gameID, defender);
+        comms->stack_send(MoneyScoreUpdateD{ ms.money, ms.score }, gameID, defender);
+    }
+    msUpdateD.clear();
 
     UDPpacket* recvPacket = SDLNet_AllocPacket(512);
     if (comms->recieve(&recvPacket)) {
@@ -142,6 +194,18 @@ void Game::networking(Comms* comms) {
 
         ///PREVER KER PACKET JE PO PRVEM BYTU
         switch ((Uint8)recvPacket->data[0]) {
+        case (int)PacketType::PONG:
+            if (recvPacket->address.host == attacker.host && recvPacket->address.port == attacker.port) {
+                lastAttackerPing = Utils::getTimeMs();
+            }
+            else if (recvPacket->address.host == defender.host && recvPacket->address.port == defender.port) {
+                lastDefenderPing = Utils::getTimeMs();
+            }
+            else {
+                std::cout << "UNRECOGNISED PONG\n";
+            }
+
+            break;
         case (int)PacketType::ENEMY_REQUEST:
             std::cout << "type: ENEMY_REQUEST\n";
 
@@ -160,7 +224,7 @@ void Game::networking(Comms* comms) {
             memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
             //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
 
-            std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
+            //std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
             towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
 
             comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
@@ -223,16 +287,35 @@ void Game::update() {
         t->Update();
     }
 
+	for (auto& e : enemies) {
+        if (e->Move(map)) {
+			std::cout << "enemy REACHED KINGDOM\n";
+            deletedEntityIDs.emplace_back(e->getID());
+
+			attackerMoney += Enemy::getPrice((int)e->getType()) / 2;
+            attackerScore += Enemy::getPrice((int)e->getType()) * 2;
+
+            std::cout << "attacker money: " << attackerMoney << " score: " << attackerScore << "\n";
+
+            msUpdateA.emplace_back(MoneyScoreUpdateA{ attackerMoney, attackerScore });
+        }
+	}
+
     for (auto it = enemies.begin(); it != enemies.end(); ) {
         std::unique_ptr<Enemy>& e = *it;
         
-        if (!e->alive()) {
+        if (!e->alive() || (std::find(deletedEntityIDs.begin(), deletedEntityIDs.end(), e->getID()) != deletedEntityIDs.end())) {
             int id = e->getID();
             deletedEntityIDs.emplace_back(id);
+
+            defenderMoney += Enemy::getPrice((int)e->getType()) / 2;
+			defenderScore += Enemy::getPrice((int)e->getType()) * 2;
+
+            msUpdateD.emplace_back(MoneyScoreUpdateD{ defenderMoney, defenderScore });
+
             it = enemies.erase(it);
         }
         else {
-            e->Move(map);
             e->Update();
             ++it;
         }

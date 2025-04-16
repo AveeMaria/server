@@ -6,8 +6,6 @@
 #include "renderer.hpp"
 #include "TextureManager.hpp"
 
-
-
 /////////////////
 
 struct Color {
@@ -109,7 +107,17 @@ struct MoneyInit {
 };
 
 struct TerminateGame {
-	bool terminate;
+	bool attackerWon = false;
+};
+
+struct MoneyScoreUpdateA {
+	int money;
+	int score;
+};
+
+struct MoneyScoreUpdateD {
+	int money;
+	int score;
 };
 
 class Utils {
@@ -206,6 +214,9 @@ public:
 		SDL_RenderPresent(Renderer::renderer);
 	}
 
+	static uint32_t getTimeMs() {
+		return static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+	}
 };
 
 /*IDEJE ZA KASNEJE

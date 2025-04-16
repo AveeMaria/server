@@ -1,6 +1,12 @@
 #include "../include/Enemy.hpp"
 
-void Enemy::Move(std::unique_ptr<Map>& m) {
+bool Enemy::Move(std::unique_ptr<Map>& m) {
+    //enemy je prsu do zadnga rowa po cesti = je ze v kraljestu
+    //enemy dobi score & denar
+    if (xpos >= 8 * TILESIZE) {
+         return true;
+    }
+
     short row = m->getRow(ypos);
     short col = m->getCol(xpos);
 
@@ -88,6 +94,8 @@ void Enemy::Move(std::unique_ptr<Map>& m) {
     if (!moved) {
         currDir = Direction::UNDEFINED;
     }
+
+    return false;
 }
 
 Enemy::Enemy() : Entity(0, 0) {

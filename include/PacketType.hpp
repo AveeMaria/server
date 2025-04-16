@@ -35,6 +35,9 @@ enum class PacketType : Uint8 {
     INIT_TIMER = 200,//uni32t time
     MONEY_INIT = 205,//int money
 
+    MONEY_SCORE_UPDATE_A = 210,//int,int,int,int
+    MONEY_SCORE_UPDATE_D = 215,//int,int,int,int
+
     INIT_GAME = 250,//game id Uint8_t
 
 	TERMINATE = 254,//END GAME
@@ -93,9 +96,17 @@ Uint8 checkType(const T& data)
     else if (std::is_same<U, MoneyInit>::value) {
         return static_cast<Uint8>(PacketType::MONEY_INIT);
     }
+    else if (std::is_same<U, MoneyScoreUpdateA>::value) {
+        return static_cast<Uint8>(PacketType::MONEY_SCORE_UPDATE_A);
+    }
+    else if (std::is_same<U, MoneyScoreUpdateD>::value) {
+        return static_cast<Uint8>(PacketType::MONEY_SCORE_UPDATE_D);
+    }
+
 	else if (std::is_same<U, TerminateGame>::value) {
 		return static_cast<Uint8>(PacketType::TERMINATE);
 	}
+    
     else if (std::is_same<U, std::string>::value) {
         return static_cast<Uint8>(PacketType::PLAYER_NAME);
     }

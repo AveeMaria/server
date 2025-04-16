@@ -28,7 +28,7 @@ private:
 	float step = 1;
 
 public:
-	void Move(std::unique_ptr<Map>& m);
+	bool Move(std::unique_ptr<Map>& m);
 
 	Enemy();
 	Enemy(Coords& c);
@@ -45,7 +45,6 @@ public:
 	void down();
 	void left();
 	void right();
-
 
 	int getHP() const { return hp; }
 

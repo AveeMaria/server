@@ -25,4 +25,3 @@ private:
     std::chrono::milliseconds duration;
 };
 
-
