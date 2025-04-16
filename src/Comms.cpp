@@ -127,20 +127,3 @@ bool Comms::allocPacket(UDPpacket** packet, const Uint8* data, int size) const {
     //std::cout << "OK: Packet allocated.\n";
     return true;
 }*/
-
-/*
-using ReturnType = std::variant<int, float, std::string, Coords>;
-ReturnType myFunction(Uint32 option) {
-    if (option == 1) {
-        return 42;
-    }
-    else if (option == 2) {
-        return 3.14f;
-    }
-    else if (option == 3) {
-        return std::string("Hello, World!");
-    }
-    else {
-        return Coords{ 1, 2 };
-    }
-}*/

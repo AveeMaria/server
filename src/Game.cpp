@@ -83,7 +83,6 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
         }
     }
 
-
     if (!isRunning) {
         if (defenderScore < attackerScore) {
             comms.stack_send(TerminateGame{ true }, gameID, attacker);

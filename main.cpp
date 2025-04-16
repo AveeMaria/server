@@ -37,7 +37,7 @@ int main() {
 
 	while (true) {
 		while (comms.recieve(&recvPacket)) {
-			std::cout << "paketek.\n";
+			//std::cout << "paketek.\n";
 			///PREVER KER PACKET JE PO PRVEM BYTU
 			switch ((int)recvPacket->data[0]) {
 			
@@ -84,7 +84,7 @@ int main() {
 			default:
 				for (auto& g : games) {
 					if (g.getGameID() == recvPacket->data[1]) {
-						std::cout << "[INFO]: game ID: " << g.getGameID() << "\n";
+						//std::cout << "[INFO]: game ID: " << g.getGameID() << "\n";
 						g.networking(comms, recvPacket);
 					}
 				}
