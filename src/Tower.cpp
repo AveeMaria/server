@@ -175,10 +175,10 @@ short Tower::calcDmg(ProjType t)
 		return 5;
 		break;
 	case ProjType::MAGEBALL:
-		return 15;
+		return 10;
 		break;
 	case ProjType::CANNONBALL:
-		return 10;
+		return 15;
 		break;
 	default:
 		return 0;
