@@ -138,27 +138,39 @@ void Game::networking(Comms& comms, UDPpacket* recvPacket) {
             }
 
             break;
+
         case (int)PacketType::TOWER_REQUEST:
-            std::cout << "type: TOWER_REQUEST\n";
-
+        {
             TowerRequest tr;
-            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
+            memcpy(&tr, &recvPacket->data[2], sizeof(tr));
 
-            //std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
-            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
+            Tile tile = Utils::getTileFromCoords(tr.coords);
+            SDL_Rect pr = { tile.col * TILESIZE, tile.row * TILESIZE, TILESIZE, TILESIZE };
 
-			if (Tower::getPrice(tr.type) > defenderMoney) {
-				//kent buy tower
-				break;
-			}
-			else {
-                defenderMoney -= Tower::getPrice(tr.type);
-				//std::cout << "defender money: " << defenderMoney << "\n";
+            bool allowTower = true;
+            for (auto& r : towerRects) {
+                if (Utils::areRectsEqual(r, pr)) {
+                    allowTower = false;
+                    break;
+                }
+            }
+            if (!allowTower) {
+                break;
+            }
 
-                comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
-                comms.stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
-			}
+            int price = Tower::getPrice(tr.type);
+            if (price > defenderMoney) {
+                break;
+            }
+
+            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, tile));
+            towerRects.emplace_back(pr);
+            defenderMoney -= price;
+
+            comms.stack_send(CreateTower{ towers.back()->getID(), pr, tr.type }, gameID, attacker);
+            comms.stack_send(CreateTower{ towers.back()->getID(), pr, tr.type }, gameID, defender);
             break;
+        }
         default:
             std::cout << "Unknown packet type.\n";
             break;
@@ -213,7 +225,7 @@ void Game::networking(Comms* comms) {
     deletedEntityIDs.clear();//ko use posle use zbrise iz vektorja
 
     for (auto& ms : msUpdateA) {
-        std::cout << "attacker money: " << ms.money << " score: " << ms.score << "\n";
+        //std::cout << "attacker money: " << ms.money << " score: " << ms.score << "\n";
 
         comms->stack_send(MoneyScoreUpdateA { ms.money, ms.score }, gameID, attacker);
         comms->stack_send(MoneyScoreUpdateA { ms.money, ms.score }, gameID, defender);
@@ -221,7 +233,7 @@ void Game::networking(Comms* comms) {
     msUpdateA.clear();
 
     for (auto& ms : msUpdateD) {
-        std::cout << "defender money: " << ms.money << " score: " << ms.score << "\n";
+        //std::cout << "defender money: " << ms.money << " score: " << ms.score << "\n";
 
         comms->stack_send(MoneyScoreUpdateD{ ms.money, ms.score }, gameID, defender);
         comms->stack_send(MoneyScoreUpdateD{ ms.money, ms.score }, gameID, defender);
@@ -264,19 +276,38 @@ void Game::networking(Comms* comms) {
 
             break;
         case (int)PacketType::TOWER_REQUEST:
-            std::cout << "type: TOWER_REQUEST\n";
-
+        {
             TowerRequest tr;
-            memcpy(&tr, &recvPacket->data[2], sizeof(TowerRequest));
-            //towers.emplace_back(std::make_unique<Tower>( Utils::getTileFromCoords(tr.coords) , tr.type));
+            memcpy(&tr, &recvPacket->data[2], sizeof(tr));
 
-            //std::cout << "recieved coords: " << tr.coords.x << " " << tr.coords.y << " type: " << tr.type << "\n";
-            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, Utils::getTileFromCoords(tr.coords)));
+            Tile tile = Utils::getTileFromCoords(tr.coords);
+            SDL_Rect pr = { tile.col * TILESIZE, tile.row * TILESIZE, TILESIZE, TILESIZE };
 
-            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, attacker);
-            comms->stack_send(CreateTower{ towers.back()->getID(), towers.back()->getRect(), tr.type }, gameID, defender);
+            bool allowTower = true;
+            for (auto& r : towerRects) {
+                if (Utils::areRectsEqual(r, pr)) {
+                    allowTower = false;
+                    break;
+                }
+            }
+            if (!allowTower) {
+                break;
+            }
 
+            int price = Tower::getPrice(tr.type);
+            if (price > defenderMoney) {
+                break;
+            }
+
+            towers.emplace_back(std::make_unique<Tower>((TowerType)tr.type, tile));
+            towerRects.emplace_back(pr);
+            defenderMoney -= price;
+
+            comms->stack_send(CreateTower{ towers.back()->getID(), pr, tr.type }, gameID, attacker);
+            comms->stack_send(CreateTower{ towers.back()->getID(), pr, tr.type }, gameID, defender);
             break;
+        }
+        //unknown
         default:
             std::cout << "Unknown packet type.\n";
             break;

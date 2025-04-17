@@ -123,6 +123,10 @@ struct MoneyScoreUpdateD {
 
 class Utils {
 public:
+	static bool areRectsEqual(const SDL_Rect& a, const SDL_Rect& b) {
+		return a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h;
+	}
+
 	static void print(const char* msg) {
 		std::cout << msg << "\n";
 	}

@@ -66,6 +66,8 @@ private:
 	std::vector<MoneyScoreUpdateA> msUpdateA;
 	std::vector<MoneyScoreUpdateD> msUpdateD;
 
+	std::vector<SDL_Rect> towerRects;//dodaja rectangle towerjev da jih ne postavla na isto mesto
+
 	bool isRunning = false;
 	bool paused = false;
 	bool mouse_down = false;

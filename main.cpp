@@ -92,13 +92,6 @@ int main() {
 				break;
 			}
 		}
-		/*NE POBRISANE SMETI ? LETS FIND OUT
-		if (clients.size() == 2) {
-			games.emplace_back(Game(clients[0], clients[1], comms));
-			std::cout << "[INFO]: Game Started\n";
-			clients.clear();
-			//break;//koncej loop
-		}*/
 
 		auto frameStart = std::chrono::high_resolution_clock::now();
 
