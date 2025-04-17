@@ -26,7 +26,6 @@ private:
 	Direction prevDir = Direction::UNDEFINED;
 
 	float step = 1;
-
 public:
 	bool Move(std::unique_ptr<Map>& m);
 

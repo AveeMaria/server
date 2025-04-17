@@ -248,7 +248,7 @@ void Game::networking(Comms* comms) {
         }
         //printBytes(reinterpret_cast<char*>(recvPacket->data), recvPacket->len);
 
-        std::cout << "recvPacket len: " << recvPacket->len << "\n";
+        //std::cout << "recvPacket len: " << recvPacket->len << "\n";
 
         ///PREVER KER PACKET JE PO PRVEM BYTU
         switch ((Uint8)recvPacket->data[0]) {
@@ -366,13 +366,13 @@ void Game::update() {
 
 	for (auto& e : enemies) {
         if (e->Move(map)) {
-			std::cout << "enemy REACHED KINGDOM\n";
+			//std::cout << "enemy REACHED KINGDOM\n";
             deletedEntityIDs.emplace_back(e->getID());
 
 			attackerMoney += Enemy::getPrice((int)e->getType()) / 2;
             attackerScore += Enemy::getPrice((int)e->getType()) * 2;
 
-            std::cout << "attacker money: " << attackerMoney << " score: " << attackerScore << "\n";
+            //std::cout << "attacker money: " << attackerMoney << " score: " << attackerScore << "\n";
 
             msUpdateA.emplace_back(MoneyScoreUpdateA{ attackerMoney, attackerScore });
         }

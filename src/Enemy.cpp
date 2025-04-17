@@ -145,16 +145,16 @@ Enemy::Enemy(Coords& c, int _type) : Entity(c) {
 
     switch (type) {
     case EnemyType::GOBLIN:
-        hp = 30;
+        hp = 20;
         break;
     case EnemyType::THIEF:
-        hp = 80;
+        hp = 40;
         break;
     case EnemyType::BANDIT:
-        hp = 50;
+        hp = 30;
         break;
     case EnemyType::KNIGHT:
-        hp = 150;
+        hp = 80;
         break;
     }
 
