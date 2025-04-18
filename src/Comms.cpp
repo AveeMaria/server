@@ -1,4 +1,6 @@
 #include "../include/Comms.hpp"
+#include <fstream>
+#include <filesystem>
 
 Comms::Comms()
 {
@@ -22,6 +24,29 @@ Comms::Comms(const char* h, Uint16 p)
 //KONSTRUKTOR SAMO ZA SERVERSIDE
 Comms::Comms(Uint16 p) {
     port = p;
+
+    std::ifstream file("../../../port.txt");
+    std::cout << "[DEBUG]: Attempting to open file ../../../port.txt\n";
+    if (!file.is_open()) {
+        std::cerr << "[ERROR]: Cannot open port.txt\n";
+    }
+    
+    else {
+        std::cout << "[DEBUG]: port.txt opened successfully\n";
+        std::string line;
+        
+        if (std::getline(file, line)) {
+            port = std::stoi(line);
+            std::cout << "[INFO]: port from port.txt: " << line << "\n";
+        }
+        else {
+            std::cout << "[DEBUG]: Current working directory: " << std::filesystem::current_path() << "\n";
+            std::cerr << "[ERROR]: Failed to read from port.txt\n";
+        }
+
+        file.close();
+    }
+
     if (!openSocket()) { 
         std::cout << "ERROR CANT OPEN SOCKET\n"; 
     }

@@ -4,7 +4,6 @@
 #include <thread>
 #include "include/Game.hpp"
 #include "include/LoggerSQL.hpp"
-//#include <cstdlib>
 
 std::vector<IPaddress> clients;//connected clients
 std::vector<Game> games;//matches that happen now
@@ -26,14 +25,11 @@ int main() {
 		SDLNet_Quit();
 	}
 	
-	//std::unique_ptr<Match> match(std::make_unique<Match>());
-
-	Comms comms(12345);
+	Comms comms((Uint16)12345);
 
 	UDPpacket* recvPacket;
 	recvPacket = SDLNet_AllocPacket(512);
 
-	//games.push_back(Game());
 
 	while (true) {
 		while (comms.recieve(&recvPacket)) {
@@ -74,8 +70,6 @@ int main() {
 
 				if (clients.size() == 2) {
 					games.emplace_back(Game(clients[0], clients[1], comms));
-					//tezave z crashanim MySQLom k se ne zarunna vec u XAMPPu
-					LoggerSQL::logGameSafe(Comms::ipAddressToString(clients[0]), Comms::ipAddressToString(clients[1]));
 					std::cout << "[INFO]: Game Started\n";
 					clients.clear();
 				}

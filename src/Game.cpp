@@ -1,4 +1,5 @@
 #include "../include/Game.hpp"
+#include "../include/LoggerSQL.hpp"
 
 std::unique_ptr<Timer> timer;
 
@@ -31,6 +32,8 @@ Game::Game(IPaddress _attacker, IPaddress _defender, Comms& comms)
 
 	attackerMoney = 300;
     defenderMoney = 300;
+
+    LoggerSQL::logGameSafe(Comms::ipAddressToString(_attacker), Comms::ipAddressToString(_defender));
 
     comms.stack_send(MoneyInit{ attackerMoney }, gameID, attacker);
     comms.stack_send(MoneyInit{ defenderMoney }, gameID, defender);

@@ -55,7 +55,7 @@ public:
     static const char* ipAddressToString(const IPaddress& ip) {
         static char ipStr[64];
         Uint32 ipAddress = ip.host;
-        snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", (ipAddress >> 24) & 0xFF, (ipAddress >> 16) & 0xFF, (ipAddress >> 8) & 0xFF, ipAddress & 0xFF);
+        snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", ipAddress & 0xFF, (ipAddress >> 8) & 0xFF, (ipAddress >> 16) & 0xFF, (ipAddress >> 24) & 0xFF);
         return ipStr;
     }
 };

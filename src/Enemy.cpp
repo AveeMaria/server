@@ -78,10 +78,7 @@ bool Enemy::Move(std::unique_ptr<Map>& m) {
                         moved = true;
                     }
                     break;
-                default:
-                    int privzeto;//da default ne joka
-                    //nemore se premikat, nej crkne al neki?
-                }
+                };
 
                 if (moved) {
                     break;
